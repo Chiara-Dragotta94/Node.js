@@ -96,9 +96,29 @@ npm run dev
 │       ├── abitudini.js
 │       ├── ricompense.js
 │       └── diario.js
+├── test/                        # Unit test
+│   ├── gestoreUtenti.test.js
+│   ├── gestoreObiettivi.test.js
+│   ├── gestoreIntervalli.test.js
+│   └── gestoreDiario.test.js
 ├── migrations.sql               # Schema database MySQL
 └── .env                         # Variabili d'ambiente (da creare)
 ```
+
+## Unit Test
+
+Il progetto include 66 test automatici scritti con **Mocha**, **Chai** e **Sinon**. I test verificano la logica di tutti i controller senza bisogno di un database attivo, grazie agli stub di Sinon che simulano le risposte del database.
+
+Per lanciare i test:
+```bash
+npm test
+```
+
+I test coprono:
+- **Utenti**: CRUD completo, login, logout, gestione monete
+- **Obiettivi**: CRUD, filtro per categoria, raggruppamento
+- **Intervalli**: CRUD, associazione obiettivi, completamento, filtri per data e obiettivo
+- **Diario**: voci del diario, sessioni di meditazione, donazioni, statistiche
 
 ## API RESTful
 
@@ -158,3 +178,4 @@ npm run dev
 - **EJS** - Template engine
 - **bcryptjs** - Cifratura password
 - **express-session** - Gestione sessioni
+- **Mocha** + **Chai** + **Sinon** - Unit testing
