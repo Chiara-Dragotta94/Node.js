@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/stile.css">
+</head>
+<body>
+  <%- include('partials/navbar') %>
+  
+  <main>
+    <!-- Sezione principale -->
+    <section class="hero">
+      <div class="hero-content">
+        <h1 class="hero-title">Trova il tuo <span class="highlight">equilibrio</span> interiore</h1>
+        <p class="hero-subtitle">MeditActive ti guida in un percorso di meditazione quotidiano, favorendo la tua crescita personale e il benessere mentale.</p>
+        <div class="hero-cta">
+          <a href="/registrazione" class="btn btn-primary btn-lg">Inizia Gratuitamente</a>
+          <a href="#features" class="btn btn-outline btn-lg">Scopri di più</a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat">
+            <span class="stat-number">10K+</span>
+            <span class="stat-label">Utenti attivi</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">50K+</span>
+            <span class="stat-label">Sessioni completate</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">1K+</span>
+            <span class="stat-label">Alberi piantati</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="meditation-circle">
+          <div class="circle-inner">
+            <span class="breathe-text">Respira</span>
+          </div>
+          <div class="circle-ring"></div>
+          <div class="circle-ring ring-2"></div>
+          <div class="circle-ring ring-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sezione funzionalità -->
+    <section class="features" id="features">
+      <div class="container">
+        <h2 class="section-title">Come funziona MeditActive</h2>
+        <p class="section-subtitle">Un approccio olistico alla meditazione e alla crescita personale</p>
+        
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🧘</div>
+            <h3>Timer Meditazione</h3>
+            <p>Sessioni guidate da 5 a 30 minuti per adattarsi al tuo ritmo quotidiano.</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">🎯</div>
+            <h3>Obiettivi Personalizzati</h3>
+            <p>Imposta obiettivi giornalieri, mensili e annuali per migliorare il tuo stile di vita.</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">📓</div>
+            <h3>Diario Personale</h3>
+            <p>Tieni traccia dei tuoi pensieri, emozioni e progressi nel tempo.</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">💰</div>
+            <h3>Monete Virtuali</h3>
+            <p>Guadagna monete 💰 completando obiettivi e sessioni di meditazione.</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">🌱</div>
+            <h3>Pianta Alberi</h3>
+            <p>Usa le tue monete 💰 per piantare alberi reali e aiutare il pianeta.</p>
+          </div>
+          
+          <div class="feature-card">
+            <div class="feature-icon">💚</div>
+            <h3>Impatto Sociale</h3>
+            <p>Supporta progetti ambientali e sociali con le tue ricompense.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Come funziona -->
+    <section class="how-it-works">
+      <div class="container">
+        <h2 class="section-title">Il tuo percorso verso l'equilibrio</h2>
+        
+        <div class="steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <h3>Registrati</h3>
+            <p>Crea il tuo account gratuito e inizia il tuo viaggio.</p>
+          </div>
+          
+          <div class="step-arrow">→</div>
+          
+          <div class="step">
+            <div class="step-number">2</div>
+            <h3>Scegli i tuoi obiettivi</h3>
+            <p>Seleziona gli obiettivi che vuoi raggiungere.</p>
+          </div>
+          
+          <div class="step-arrow">→</div>
+          
+          <div class="step">
+            <div class="step-number">3</div>
+            <h3>Medita ogni giorno</h3>
+            <p>Usa il timer per le tue sessioni quotidiane.</p>
+          </div>
+          
+          <div class="step-arrow">→</div>
+          
+          <div class="step">
+            <div class="step-number">4</div>
+            <h3>Guadagna e dona</h3>
+            <p>Trasforma i tuoi progressi in impatto positivo.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Testimonianze -->
+    <section class="testimonials">
+      <div class="container">
+        <h2 class="section-title">Cosa dicono i nostri utenti</h2>
+        
+        <div class="testimonials-grid">
+          <div class="testimonial-card">
+            <div class="testimonial-content">
+              <p>"MeditActive ha trasformato le mie mattine. Ora inizio ogni giorno con chiarezza mentale."</p>
+            </div>
+            <div class="testimonial-author">
+              <div class="author-avatar">M</div>
+              <div class="author-info">
+                <span class="author-name">Marco R.</span>
+                <span class="author-detail">Utente da 6 mesi</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="testimonial-card">
+            <div class="testimonial-content">
+              <p>"L'idea di poter piantare alberi con le mie meditazioni mi motiva ogni giorno!"</p>
+            </div>
+            <div class="testimonial-author">
+              <div class="author-avatar">S</div>
+              <div class="author-info">
+                <span class="author-name">Sara L.</span>
+                <span class="author-detail">15 alberi piantati</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="testimonial-card">
+            <div class="testimonial-content">
+              <p>"Finalmente un'app che unisce benessere personale e impatto ambientale."</p>
+            </div>
+            <div class="testimonial-author">
+              <div class="author-avatar">G</div>
+              <div class="author-info">
+                <span class="author-name">Giovanni P.</span>
+                <span class="author-detail">100+ sessioni</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sezione chiamata all'azione -->
+    <section class="cta-section">
+      <div class="container">
+        <div class="cta-content">
+          <h2>Pronto a iniziare il tuo viaggio?</h2>
+          <p>Unisciti a migliaia di persone che hanno trovato il loro equilibrio con MeditActive.</p>
+          <a href="/registrazione" class="btn btn-primary btn-lg">Inizia Ora - È Gratis</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('partials/footer') %>
+  <script src="/js/principale.js"></script>
+</body>
+</html>

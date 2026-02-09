@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/stile.css">
+</head>
+<body>
+  <%- include('partials/navbar') %>
+  
+  <main class="profile-page">
+    <div class="container">
+      <%- include('partials/messaggi') %>
+      
+      <section class="page-header">
+        <h1>👤 Il Tuo Profilo</h1>
+        <p>Gestisci le tue informazioni e preferenze</p>
+      </section>
+
+      <div class="profile-grid">
+        <!-- Informazioni profilo -->
+        <section class="profile-info card">
+          <div class="profile-avatar">
+            <div class="avatar-circle">
+              <%= profile.nome.charAt(0) %><%= profile.cognome.charAt(0) %>
+            </div>
+            <div class="avatar-info">
+              <h2><%= profile.nome %> <%= profile.cognome %></h2>
+              <p><%= profile.email %></p>
+              <span class="member-since">Membro dal <%= new Date(profile.created_at).toLocaleDateString('it-IT', { month: 'long', year: 'numeric' }) %></span>
+            </div>
+          </div>
+
+          <div class="profile-stats">
+            <div class="profile-stat">
+              <span class="stat-value"><%= stats.total_sessions %></span>
+              <span class="stat-label">Sessioni</span>
+            </div>
+            <div class="profile-stat">
+              <span class="stat-value"><%= stats.total_minutes %></span>
+              <span class="stat-label">Minuti</span>
+            </div>
+            <div class="profile-stat">
+              <span class="stat-value"><%= stats.diary_entries %></span>
+              <span class="stat-label">Voci diario</span>
+            </div>
+            <div class="profile-stat">
+              <span class="stat-value"><%= stats.goals_completed %></span>
+              <span class="stat-label">Obiettivi</span>
+            </div>
+          </div>
+
+          <div class="coins-display">
+            <span class="coins-icon">💰</span>
+            <span class="coins-amount"><%= profile.coins %></span>
+            <span class="coins-label">monete</span>
+          </div>
+        </section>
+
+        <!-- Form modifica profilo -->
+        <section class="edit-profile card">
+          <h2>✏️ Modifica Profilo</h2>
+          <form action="/profilo" method="POST" class="profile-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="nome">Nome</label>
+                <input type="text" id="nome" name="nome" value="<%= profile.nome %>" required>
+              </div>
+              <div class="form-group">
+                <label for="cognome">Cognome</label>
+                <input type="text" id="cognome" name="cognome" value="<%= profile.cognome %>" required>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" name="email" value="<%= profile.email %>" required>
+            </div>
+            
+            <hr class="form-divider">
+            
+            <h3>🔐 Cambia Password</h3>
+            <p class="form-hint">Lascia vuoto se non vuoi cambiare la password</p>
+            
+            <div class="form-group">
+              <label for="password">Password Attuale</label>
+              <input type="password" id="password" name="password" placeholder="La tua password attuale">
+            </div>
+            
+            <div class="form-group">
+              <label for="newPassword">Nuova Password</label>
+              <input type="password" id="newPassword" name="newPassword" placeholder="Nuova password (min. 6 caratteri)">
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Salva Modifiche</button>
+          </form>
+        </section>
+
+        <!-- Traguardi -->
+        <section class="achievements card">
+          <h2>🏆 Traguardi</h2>
+          <div class="achievements-grid">
+            <div class="achievement <%= stats.total_sessions >= 1 ? 'unlocked' : 'locked' %>">
+              <span class="achievement-icon">🌱</span>
+              <span class="achievement-name">Prima Sessione</span>
+              <span class="achievement-desc">Completa la tua prima meditazione</span>
+            </div>
+            <div class="achievement <%= stats.total_sessions >= 10 ? 'unlocked' : 'locked' %>">
+              <span class="achievement-icon">🌿</span>
+              <span class="achievement-name">Praticante</span>
+              <span class="achievement-desc">10 sessioni completate</span>
+            </div>
+            <div class="achievement <%= stats.total_sessions >= 50 ? 'unlocked' : 'locked' %>">
+              <span class="achievement-icon">🌳</span>
+              <span class="achievement-name">Esperto</span>
+              <span class="achievement-desc">50 sessioni completate</span>
+            </div>
+            <div class="achievement <%= stats.total_minutes >= 60 ? 'unlocked' : 'locked' %>">
+              <span class="achievement-icon">⏰</span>
+              <span class="achievement-name">Un'Ora di Pace</span>
+              <span class="achievement-desc">Medita per 60 minuti totali</span>
+            </div>
+            <div class="achievement <%= stats.total_minutes >= 600 ? 'unlocked' : 'locked' %>">
+              <span class="achievement-icon">🕰️</span>
+              <span class="achievement-name">10 Ore</span>
+              <span class="achievement-desc">Medita per 600 minuti totali</span>
+            </div>
+            <div class="achievement <%= stats.diary_entries >= 7 ? 'unlocked' : 'locked' %>">
+              <span class="achievement-icon">📝</span>
+              <span class="achievement-name">Scrittore</span>
+              <span class="achievement-desc">7 voci nel diario</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Zona pericolosa -->
+        <section class="danger-zone card">
+          <h2>⚠️ Zona Pericolosa</h2>
+          <p>Queste azioni sono irreversibili. Procedi con cautela.</p>
+          <button class="btn btn-danger" onclick="confirmDeleteAccount()">
+            Elimina Account
+          </button>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+  <script>
+    function confirmDeleteAccount() {
+      if (confirm('Sei sicuro/a di voler eliminare il tuo account? Questa azione è irreversibile e perderai tutti i tuoi dati.')) {
+        if (confirm('Ultima conferma: vuoi davvero eliminare il tuo account?')) {
+          fetch('/api/users/<%= profile.id %>', { method: 'DELETE' })
+            .then(() => window.location.href = '/')
+            .catch(err => alert('Errore durante l\'eliminazione'));
+        }
+      }
+    }
+  </script>
+  <script src="/js/principale.js"></script>
+</body>
+</html>

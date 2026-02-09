@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/stile.css">
+</head>
+<body class="timer-page">
+  <%- include('partials/navbar') %>
+  
+  <main class="timer-main">
+    <div class="container">
+      <section class="timer-container">
+        <div class="timer-header">
+          <h1>Sessione di Meditazione</h1>
+          <p>Trova un posto tranquillo e inizia il tuo momento di pace.</p>
+        </div>
+
+        <!-- Schermata del timer -->
+        <div class="timer-display">
+          <div class="timer-circle" id="timerCircle">
+            <svg class="timer-svg" viewBox="0 0 200 200">
+              <circle class="timer-bg" cx="100" cy="100" r="90"/>
+              <circle class="timer-progress" id="timerProgress" cx="100" cy="100" r="90"/>
+            </svg>
+            <div class="timer-inner">
+              <span class="timer-time" id="timerTime">20:00</span>
+              <span class="timer-status" id="timerStatus">Pronto</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selezione durata -->
+        <div class="duration-selection" id="durationSelection">
+          <h3>Scegli la durata</h3>
+          <div class="duration-options">
+            <button class="duration-btn" data-minutes="5">5 min</button>
+            <button class="duration-btn" data-minutes="10">10 min</button>
+            <button class="duration-btn" data-minutes="15">15 min</button>
+            <button class="duration-btn active" data-minutes="20">20 min</button>
+            <button class="duration-btn" data-minutes="30">30 min</button>
+            <button class="duration-btn" data-minutes="45">45 min</button>
+            <button class="duration-btn" data-minutes="60">60 min</button>
+          </div>
+        </div>
+
+        <!-- Controlli del timer -->
+        <div class="timer-controls">
+          <button class="timer-btn timer-start" id="startBtn">
+            <span class="btn-icon">▶</span>
+            <span class="btn-text">Inizia</span>
+          </button>
+          <button class="timer-btn timer-pause hidden" id="pauseBtn">
+            <span class="btn-icon">⏸</span>
+            <span class="btn-text">Pausa</span>
+          </button>
+          <button class="timer-btn timer-reset hidden" id="resetBtn">
+            <span class="btn-icon">↺</span>
+            <span class="btn-text">Reset</span>
+          </button>
+        </div>
+
+        <!-- Opzioni audio -->
+        <div class="sound-options">
+          <h3>Suoni di sottofondo</h3>
+          <div class="sound-buttons">
+            <button class="sound-btn" data-sound="silence">
+              <span>🔇</span>
+              <span>Silenzio</span>
+            </button>
+            <button class="sound-btn active" data-sound="nature">
+              <span>🌿</span>
+              <span>Natura</span>
+            </button>
+            <button class="sound-btn" data-sound="rain">
+              <span>🌧️</span>
+              <span>Pioggia</span>
+            </button>
+            <button class="sound-btn" data-sound="waves">
+              <span>🌊</span>
+              <span>Onde</span>
+            </button>
+            <button class="sound-btn" data-sound="singing-bowl">
+              <span>🔔</span>
+              <span>Campana</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Guida alla respirazione -->
+        <div class="breathing-guide hidden" id="breathingGuide">
+          <div class="breath-circle">
+            <div class="breath-text" id="breathText">Inspira</div>
+          </div>
+          <p class="breath-instruction">Segui il ritmo del respiro</p>
+        </div>
+
+        <!-- Modale di completamento -->
+        <div class="timer-modal hidden" id="completionModal">
+          <div class="modal-content">
+            <div class="modal-icon">🎉</div>
+            <h2>Ottimo lavoro!</h2>
+            <p class="completion-time">Hai meditato per <span id="completedMinutes">20</span> minuti</p>
+            <p class="completion-coins">+<span id="coinsEarned">20</span> monete guadagnate! 💰</p>
+            <div class="completion-actions">
+              <button class="btn btn-primary" id="saveSession">Salva Sessione</button>
+              <a href="/diario" class="btn btn-outline">Scrivi nel Diario</a>
+            </div>
+            <button class="btn btn-link" id="closeModal">Chiudi</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sezione consigli -->
+      <section class="meditation-tips">
+        <h2>Suggerimenti per la meditazione</h2>
+        <div class="tips-grid">
+          <div class="tip-card">
+            <span class="tip-icon">🧘</span>
+            <h4>Postura</h4>
+            <p>Siediti comodamente con la schiena dritta. Puoi usare un cuscino per supporto.</p>
+          </div>
+          <div class="tip-card">
+            <span class="tip-icon">👃</span>
+            <h4>Respiro</h4>
+            <p>Concentrati sul respiro naturale. Non cercare di controllarlo, osservalo semplicemente.</p>
+          </div>
+          <div class="tip-card">
+            <span class="tip-icon">🧠</span>
+            <h4>Pensieri</h4>
+            <p>Quando i pensieri arrivano, notali gentilmente e ritorna al respiro.</p>
+          </div>
+          <div class="tip-card">
+            <span class="tip-icon">💚</span>
+            <h4>Pazienza</h4>
+            <p>Sii gentile con te stesso/a. La meditazione è una pratica, non una perfezione.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+  <script src="/js/timer.js"></script>
+  <script src="/js/principale.js"></script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/stile.css">
+</head>
+<body>
+  <%- include('partials/navbar') %>
+  
+  <main class="dashboard">
+    <div class="container">
+      <%- include('partials/messaggi') %>
+      
+      <!-- Sezione di benvenuto -->
+      <section class="dashboard-welcome">
+        <div class="welcome-content">
+          <h1>Ciao, <%= user.nome %>! ❤️</h1>
+          <p>È un nuovo giorno per coltivare la tua pace interiore.</p>
+        </div>
+        <div class="welcome-cta">
+          <a href="/timer" class="btn btn-primary">Inizia a Meditare</a>
+        </div>
+      </section>
+
+      <!-- Statistiche rapide -->
+      <section class="dashboard-stats">
+        <div class="stat-card">
+          <div class="stat-icon">🧘</div>
+          <div class="stat-info">
+            <span class="stat-value"><%= stats.total_sessions %></span>
+            <span class="stat-label">Sessioni totali</span>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-info">
+            <span class="stat-value"><%= stats.total_minutes %></span>
+            <span class="stat-label">Minuti meditati</span>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-info">
+            <span class="stat-value"><%= user.coins %></span>
+            <span class="stat-label">Monete</span>
+          </div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-info">
+            <span class="stat-value"><%= intervals.reduce((sum, i) => sum + i.completed_goals, 0) %></span>
+            <span class="stat-label">Obiettivi completati</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Griglia principale -->
+      <div class="dashboard-grid">
+        <!-- Obiettivi di oggi -->
+        <section class="dashboard-card goals-today">
+          <div class="card-header">
+            <h2>🎯 Obiettivi di Oggi</h2>
+            <a href="/obiettivi" class="card-link">Gestisci →</a>
+          </div>
+          <div class="card-content">
+            <% if (intervals.length === 0) { %>
+              <div class="empty-state">
+                <p>Non hai ancora obiettivi attivi.</p>
+                <a href="/obiettivi" class="btn btn-outline btn-sm">Imposta Obiettivi</a>
+              </div>
+            <% } else { %>
+              <% intervals.forEach(interval => { %>
+                <div class="goal-interval">
+                  <div class="interval-header">
+                    <span class="interval-type badge badge-<%= interval.interval_type %>">
+                      <%= interval.interval_type === 'daily' ? 'Giornaliero' : interval.interval_type === 'monthly' ? 'Mensile' : 'Annuale' %>
+                    </span>
+                    <span class="interval-progress"><%= interval.completed_goals %>/<%= interval.total_goals %></span>
+                  </div>
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: <%= interval.total_goals > 0 ? (interval.completed_goals / interval.total_goals * 100) : 0 %>%"></div>
+                  </div>
+                </div>
+              <% }); %>
+            <% } %>
+          </div>
+        </section>
+
+        <!-- Meditazione rapida -->
+        <section class="dashboard-card meditation-quick">
+          <div class="card-header">
+            <h2>🧘 Meditazione Rapida</h2>
+          </div>
+          <div class="card-content">
+            <p class="meditation-prompt">Quanto tempo hai oggi?</p>
+            <div class="meditation-options">
+              <a href="/timer?duration=5" class="meditation-option">
+                <span class="option-time">5</span>
+                <span class="option-label">minuti</span>
+              </a>
+              <a href="/timer?duration=10" class="meditation-option">
+                <span class="option-time">10</span>
+                <span class="option-label">minuti</span>
+              </a>
+              <a href="/timer?duration=15" class="meditation-option">
+                <span class="option-time">15</span>
+                <span class="option-label">minuti</span>
+              </a>
+              <a href="/timer?duration=20" class="meditation-option active">
+                <span class="option-time">20</span>
+                <span class="option-label">minuti</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- Diario recente -->
+        <section class="dashboard-card diary-recent">
+          <div class="card-header">
+            <h2>📓 Diario Recente</h2>
+            <a href="/diario" class="card-link">Vedi tutto →</a>
+          </div>
+          <div class="card-content">
+            <% if (recentDiary.length === 0) { %>
+              <div class="empty-state">
+                <p>Inizia a scrivere i tuoi pensieri.</p>
+                <a href="/diario" class="btn btn-outline btn-sm">Scrivi</a>
+              </div>
+            <% } else { %>
+              <div class="diary-list">
+                <% recentDiary.forEach(entry => { %>
+                  <div class="diary-preview">
+                    <div class="diary-date">
+                      <%= new Date(entry.created_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) %>
+                    </div>
+                    <div class="diary-content">
+                      <h4><%= entry.title || 'Senza titolo' %></h4>
+                      <p><%= entry.content.substring(0, 80) %><%= entry.content.length > 80 ? '...' : '' %></p>
+                    </div>
+                    <% if (entry.mood) { %>
+                      <span class="diary-mood"><%= entry.mood %></span>
+                    <% } %>
+                  </div>
+                <% }); %>
+              </div>
+            <% } %>
+          </div>
+        </section>
+
+        <!-- Anteprima ricompense -->
+        <section class="dashboard-card rewards-preview">
+          <div class="card-header">
+            <h2>🌱 Il Tuo Impatto</h2>
+            <a href="/ricompense" class="card-link">Ricompense →</a>
+          </div>
+          <div class="card-content">
+            <div class="rewards-info">
+              <div class="coins-display">
+                <span class="coins-amount">💰 <%= user.coins %></span>
+                <span class="coins-label">monete disponibili</span>
+              </div>
+              <div class="rewards-actions">
+                <a href="/ricompense" class="btn btn-sm btn-outline">🌳 Pianta un albero</a>
+                <a href="/ricompense" class="btn btn-sm btn-outline">💚 Dona</a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Consiglio del giorno -->
+      <section class="daily-tip">
+        <div class="tip-icon">💡</div>
+        <div class="tip-content">
+          <h3>Consiglio del giorno</h3>
+          <p>La meditazione mattutina può aumentare la tua produttività del 14%. Prova a meditare appena sveglio/a per 5 minuti.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+  <script src="/js/principale.js"></script>
+</body>
+</html>

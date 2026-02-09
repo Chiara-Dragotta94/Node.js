@@ -1,0 +1,34 @@
+<nav class="navbar">
+  <div class="nav-container">
+    <a href="/" class="nav-logo">
+      <span class="logo-icon">🧘</span>
+      <span class="logo-text">MeditActive</span>
+    </a>
+    
+    <button class="nav-toggle" id="navToggle" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    
+    <ul class="nav-menu" id="navMenu">
+      <% if (user) { %>
+        <li><a href="/pannello" class="nav-link">Dashboard</a></li>
+        <li><a href="/timer" class="nav-link">Timer</a></li>
+        <li><a href="/obiettivi" class="nav-link">Obiettivi</a></li>
+        <li><a href="/abitudini" class="nav-link">Abitudini</a></li>
+        <li><a href="/diario" class="nav-link">Diario</a></li>
+        <li><a href="/ricompense" class="nav-link">Ricompense</a></li>
+        <li class="nav-user">
+          <a href="/profilo" class="nav-link user-link">
+            <span class="user-avatar"><%= user.nome.charAt(0) %></span>
+            <span class="user-coins">💰 <%= user.coins %></span>
+          </a>
+        </li>
+        <li><a href="/logout" class="nav-link nav-btn-outline">Esci</a></li>
+      <% } else { %>
+        <li><a href="/" class="nav-link">Home</a></li>
+        <li><a href="/accesso" class="nav-link">Accedi</a></li>
+        <li><a href="/registrazione" class="nav-link nav-btn">Inizia Gratis</a></li>
+      <% } %>
+    </ul>
+  </div>
+</nav>

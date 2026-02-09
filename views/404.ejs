@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/stile.css">
+</head>
+<body class="error-page">
+  <%- include('partials/navbar') %>
+  
+  <main class="error-main">
+    <div class="error-container">
+      <div class="error-icon">🧘</div>
+      <h1>404</h1>
+      <h2>Pagina non trovata</h2>
+      <p>La pagina che stai cercando non esiste o è stata spostata.</p>
+      <p class="error-quote">"Ogni cammino inizia con un passo nella giusta direzione."</p>
+      <div class="error-actions">
+        <a href="/" class="btn btn-primary">Torna alla Home</a>
+        <% if (user) { %>
+          <a href="/pannello" class="btn btn-outline">Vai alla Dashboard</a>
+        <% } %>
+      </div>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

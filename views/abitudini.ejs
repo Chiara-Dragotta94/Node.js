@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/stile.css">
+</head>
+<body>
+  <%- include('partials/navbar') %>
+  
+  <main class="habits-page">
+    <div class="container">
+      <%- include('partials/messaggi') %>
+      
+      <section class="page-header">
+        <h1>📊 Tracciamento Abitudini</h1>
+        <p>Monitora i tuoi progressi e completa i tuoi obiettivi</p>
+      </section>
+
+      <!-- Sezione preferenze -->
+      <section class="preferences-section card">
+        <h2>⚙️ Le Tue Preferenze</h2>
+        <form action="/preferenze" method="POST" class="preferences-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="preferred_meditation_time">Orario preferito per meditare</label>
+              <select id="preferred_meditation_time" name="preferred_meditation_time">
+                <option value="">Seleziona...</option>
+                <option value="morning" <%= preferences.preferred_meditation_time === 'morning' ? 'selected' : '' %>>Mattina (6:00 - 9:00)</option>
+                <option value="midday" <%= preferences.preferred_meditation_time === 'midday' ? 'selected' : '' %>>Mezzogiorno (12:00 - 14:00)</option>
+                <option value="afternoon" <%= preferences.preferred_meditation_time === 'afternoon' ? 'selected' : '' %>>Pomeriggio (15:00 - 18:00)</option>
+                <option value="evening" <%= preferences.preferred_meditation_time === 'evening' ? 'selected' : '' %>>Sera (19:00 - 22:00)</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="daily_goal_minutes">Obiettivo giornaliero (minuti)</label>
+              <input type="number" id="daily_goal_minutes" name="daily_goal_minutes" 
+                     value="<%= preferences.daily_goal_minutes || 10 %>" min="5" max="120">
+            </div>
+            
+            <div class="form-group checkbox-group">
+              <label>
+                <input type="checkbox" name="reminder_enabled" 
+                       <%= preferences.reminder_enabled ? 'checked' : '' %>>
+                Attiva promemoria
+              </label>
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Salva Preferenze</button>
+        </form>
+      </section>
+
+      <!-- Tracciamento abitudini -->
+      <section class="habits-tracker">
+        <h2>🎯 I Tuoi Obiettivi Attivi</h2>
+        
+        <% if (intervals.length === 0) { %>
+          <div class="empty-state card">
+            <div class="empty-icon">📋</div>
+            <h3>Nessun obiettivo attivo</h3>
+            <p>Vai alla pagina Obiettivi per creare il tuo primo intervallo e iniziare a tracciare i tuoi progressi.</p>
+            <a href="/obiettivi" class="btn btn-primary">Imposta Obiettivi</a>
+          </div>
+        <% } else { %>
+          <div class="intervals-tracker">
+            <% intervals.forEach(interval => { %>
+              <div class="interval-tracker card" data-interval-id="<%= interval._id || interval.id %>">
+                <div class="interval-header">
+                  <div class="interval-info">
+                    <span class="interval-type badge badge-<%= interval.interval_type %>">
+                      <%= interval.interval_type === 'daily' ? '☀️ Giornaliero' : interval.interval_type === 'monthly' ? '📅 Mensile' : '🌟 Annuale' %>
+                    </span>
+                    <span class="interval-dates">
+                      <%= new Date(interval.start_date).toLocaleDateString('it-IT') %> - 
+                      <%= new Date(interval.end_date).toLocaleDateString('it-IT') %>
+                    </span>
+                  </div>
+                  <div class="interval-progress-info">
+                    <span class="progress-text"><%= interval.completed_goals %>/<%= interval.total_goals %> completati</span>
+                    <div class="progress-bar">
+                      <div class="progress-fill" style="width: <%= interval.total_goals > 0 ? (interval.completed_goals / interval.total_goals * 100) : 0 %>%"></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="goals-checklist">
+                  <% if (interval.goals && interval.goals.length > 0) { %>
+                    <% interval.goals.forEach(goal => { %>
+                      <div class="goal-item <%= goal.completed ? 'completed' : '' %>" data-goal-id="<%= goal.id %>">
+                        <label class="goal-checkbox">
+                          <input type="checkbox" 
+                                 <%= goal.completed ? 'checked disabled' : '' %>
+                                 data-interval-id="<%= interval._id || interval.id %>"
+                                 data-goal-id="<%= goal._id || goal.id %>"
+                                 class="complete-goal-checkbox">
+                          <span class="checkbox-custom"></span>
+                        </label>
+                        <div class="goal-info">
+                          <h4 class="goal-name"><%= goal.name %></h4>
+                          <p class="goal-desc"><%= goal.description %></p>
+                        </div>
+                        <div class="goal-reward">
+                          <span class="coins">💰 <%= goal.coins_reward %></span>
+                          <% if (goal.completed) { %>
+                            <span class="completed-badge">✓ Completato</span>
+                          <% } %>
+                        </div>
+                      </div>
+                    <% }); %>
+                  <% } else { %>
+                    <p class="no-goals">Nessun obiettivo in questo intervallo. <a href="/obiettivi">Aggiungi obiettivi</a></p>
+                  <% } %>
+                </div>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </section>
+
+      <!-- Panoramica settimanale -->
+      <section class="weekly-overview card">
+        <h2>📈 Riepilogo Settimanale</h2>
+        <div class="week-grid">
+          <% 
+            const days = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+            const today = new Date().getDay();
+            const todayIndex = today === 0 ? 6 : today - 1;
+          %>
+          <% days.forEach((day, index) => { %>
+            <div class="week-day <%= index === todayIndex ? 'today' : '' %> <%= index < todayIndex ? 'past' : '' %>">
+              <span class="day-name"><%= day %></span>
+              <div class="day-indicator">
+                <% if (index < todayIndex) { %>
+                  <span class="day-status completed">✓</span>
+                <% } else if (index === todayIndex) { %>
+                  <span class="day-status current">●</span>
+                <% } else { %>
+                  <span class="day-status future">○</span>
+                <% } %>
+              </div>
+            </div>
+          <% }); %>
+        </div>
+      </section>
+
+      <!-- Sezione motivazione -->
+      <section class="motivation-section">
+        <div class="motivation-card card">
+          <div class="motivation-icon">💪</div>
+          <div class="motivation-content">
+            <h3>Continua così!</h3>
+            <p>Ogni piccolo passo conta. La costanza è la chiave del successo nella meditazione e nella vita.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+  <script src="/js/abitudini.js"></script>
+  <script src="/js/principale.js"></script>
+</body>
+</html>

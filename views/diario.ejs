@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/stile.css">
+</head>
+<body>
+  <%- include('partials/navbar') %>
+  
+  <main class="diary-page">
+    <div class="container">
+      <%- include('partials/messaggi') %>
+      
+      <section class="page-header">
+        <h1>📓 Il Tuo Diario</h1>
+        <p>Scrivi i tuoi pensieri, emozioni e riflessioni quotidiane</p>
+      </section>
+
+      <!-- Form nuova voce -->
+      <section class="new-entry card">
+        <h2>✍️ Nuova Voce</h2>
+        <form id="diaryForm" class="diary-form">
+          <div class="form-group">
+            <label for="entryTitle">Titolo (opzionale)</label>
+            <input type="text" id="entryTitle" name="title" placeholder="Dai un titolo alla tua voce...">
+          </div>
+          
+          <div class="form-group">
+            <label for="entryContent">Cosa hai in mente oggi?</label>
+            <textarea id="entryContent" name="content" rows="6" required 
+                      placeholder="Scrivi i tuoi pensieri, emozioni, riflessioni..."></textarea>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Come ti senti?</label>
+              <div class="mood-selector">
+                <label class="mood-option">
+                  <input type="radio" name="mood" value="😊">
+                  <span class="mood-emoji">😊</span>
+                  <span class="mood-label">Felice</span>
+                </label>
+                <label class="mood-option">
+                  <input type="radio" name="mood" value="😌">
+                  <span class="mood-emoji">😌</span>
+                  <span class="mood-label">Sereno</span>
+                </label>
+                <label class="mood-option">
+                  <input type="radio" name="mood" value="🤔">
+                  <span class="mood-emoji">🤔</span>
+                  <span class="mood-label">Pensieroso</span>
+                </label>
+                <label class="mood-option">
+                  <input type="radio" name="mood" value="😔">
+                  <span class="mood-emoji">😔</span>
+                  <span class="mood-label">Triste</span>
+                </label>
+                <label class="mood-option">
+                  <input type="radio" name="mood" value="😤">
+                  <span class="mood-emoji">😤</span>
+                  <span class="mood-label">Frustrato</span>
+                </label>
+                <label class="mood-option">
+                  <input type="radio" name="mood" value="🙏">
+                  <span class="mood-emoji">🙏</span>
+                  <span class="mood-label">Grato</span>
+                </label>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="meditationMinutes">Minuti meditati oggi</label>
+              <input type="number" id="meditationMinutes" name="meditation_minutes" min="0" value="0" placeholder="0">
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">💾 Salva Voce</button>
+        </form>
+      </section>
+
+      <!-- Spunti di scrittura -->
+      <section class="writing-prompts card">
+        <h3>💡 Suggerimenti per scrivere</h3>
+        <div class="prompts-list">
+          <button class="prompt-btn" data-prompt="Oggi sono grato/a per...">🙏 Gratitudine</button>
+          <button class="prompt-btn" data-prompt="La mia meditazione di oggi è stata...">🧘 Meditazione</button>
+          <button class="prompt-btn" data-prompt="Oggi ho imparato che...">📚 Apprendimento</button>
+          <button class="prompt-btn" data-prompt="Una cosa che voglio migliorare è...">🎯 Crescita</button>
+          <button class="prompt-btn" data-prompt="Mi sento così perché...">💭 Emozioni</button>
+        </div>
+      </section>
+
+      <!-- Voci del diario -->
+      <section class="diary-entries">
+        <h2>📖 Le Tue Voci</h2>
+        
+        <% if (entries.length === 0) { %>
+          <div class="empty-state card">
+            <div class="empty-icon">📝</div>
+            <h3>Il tuo diario è vuoto</h3>
+            <p>Inizia a scrivere la tua prima voce! Annotare i tuoi pensieri può aiutarti a riflettere e crescere.</p>
+          </div>
+        <% } else { %>
+          <div class="entries-list">
+            <% entries.forEach(entry => { %>
+              <article class="entry-card card" data-entry-id="<%= entry._id || entry.id %>">
+                <div class="entry-header">
+                  <div class="entry-date">
+                    <span class="date-day"><%= new Date(entry.createdAt || entry.created_at).getDate() %></span>
+                    <span class="date-month"><%= new Date(entry.createdAt || entry.created_at).toLocaleDateString('it-IT', { month: 'short' }) %></span>
+                    <span class="date-year"><%= new Date(entry.createdAt || entry.created_at).getFullYear() %></span>
+                  </div>
+                  <div class="entry-meta">
+                    <% if (entry.mood) { %>
+                      <span class="entry-mood"><%= entry.mood %></span>
+                    <% } %>
+                    <% if (entry.meditation_minutes > 0) { %>
+                      <span class="entry-meditation">🧘 <%= entry.meditation_minutes %> min</span>
+                    <% } %>
+                  </div>
+                </div>
+                
+                <div class="entry-content">
+                  <% if (entry.title) { %>
+                    <h3 class="entry-title"><%= entry.title %></h3>
+                  <% } %>
+                  <p class="entry-text"><%= entry.content %></p>
+                </div>
+                
+                <div class="entry-actions">
+                  <button class="btn btn-sm btn-outline edit-entry" data-entry-id="<%= entry._id || entry.id %>">
+                    ✏️ Modifica
+                  </button>
+                  <button class="btn btn-sm btn-outline delete-entry" data-entry-id="<%= entry._id || entry.id %>">
+                    🗑️ Elimina
+                  </button>
+                </div>
+              </article>
+            <% }); %>
+          </div>
+        <% } %>
+      </section>
+
+      <!-- Modale modifica -->
+      <div class="modal hidden" id="editModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+          <h3>✏️ Modifica Voce</h3>
+          <form id="editForm">
+            <input type="hidden" id="editEntryId">
+            <div class="form-group">
+              <label for="editTitle">Titolo</label>
+              <input type="text" id="editTitle" name="title">
+            </div>
+            <div class="form-group">
+              <label for="editContent">Contenuto</label>
+              <textarea id="editContent" name="content" rows="6" required></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="editMood">Mood</label>
+                <select id="editMood" name="mood">
+                  <option value="">Nessuno</option>
+                  <option value="😊">😊 Felice</option>
+                  <option value="😌">😌 Sereno</option>
+                  <option value="🤔">🤔 Pensieroso</option>
+                  <option value="😔">😔 Triste</option>
+                  <option value="😤">😤 Frustrato</option>
+                  <option value="🙏">🙏 Grato</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="editMeditationMinutes">Minuti meditati</label>
+                <input type="number" id="editMeditationMinutes" name="meditation_minutes" min="0">
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button type="submit" class="btn btn-primary">Salva Modifiche</button>
+              <button type="button" class="btn btn-outline" onclick="closeEditModal()">Annulla</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+  <script src="/js/diario.js"></script>
+  <script src="/js/principale.js"></script>
+</body>
+</html>

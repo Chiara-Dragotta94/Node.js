@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/stile.css">
+</head>
+<body class="auth-page">
+  <%- include('partials/navbar') %>
+  
+  <main class="auth-main">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-icon">🧘</div>
+          <h1>Bentornato/a</h1>
+          <p>Accedi per continuare il tuo percorso</p>
+        </div>
+        
+        <%- include('partials/messaggi') %>
+        
+        <form class="auth-form" action="/accesso" method="POST">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" value="<%= typeof email !== 'undefined' ? email : '' %>" required placeholder="la-tua@email.com">
+          </div>
+          
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required placeholder="La tua password">
+          </div>
+          
+          <button type="submit" class="btn btn-primary btn-block">Accedi</button>
+        </form>
+        
+        <div class="auth-footer">
+          <p>Non hai un account? <a href="/registrazione">Registrati gratis</a></p>
+        </div>
+        
+        <div class="auth-quote">
+          <blockquote>
+            "La meditazione non è una fuga dalla vita. È un incontro con essa."
+          </blockquote>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <script src="/js/principale.js"></script>
+</body>
+</html>

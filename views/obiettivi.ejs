@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/stile.css">
+</head>
+<body>
+  <%- include('partials/navbar') %>
+  
+  <main class="goals-page">
+    <div class="container">
+      <%- include('partials/messaggi') %>
+      
+      <section class="page-header">
+        <h1>🎯 I Tuoi Obiettivi</h1>
+        <p>Seleziona gli obiettivi che vuoi raggiungere e il periodo di tempo</p>
+      </section>
+
+      <!-- Form creazione intervallo -->
+      <section class="create-interval card">
+        <h2>Crea un nuovo intervallo di obiettivi</h2>
+        <form id="createIntervalForm" class="interval-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="intervalType">Tipo di intervallo</label>
+              <select id="intervalType" name="interval_type" required>
+                <option value="daily">Giornaliero</option>
+                <option value="monthly">Mensile</option>
+                <option value="yearly">Annuale</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="startDate">Data inizio</label>
+              <input type="date" id="startDate" name="start_date" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="endDate">Data fine</label>
+              <input type="date" id="endDate" name="end_date" required>
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Crea Intervallo</button>
+        </form>
+      </section>
+
+      <!-- Obiettivi disponibili -->
+      <section class="available-goals">
+        <h2>Obiettivi Disponibili</h2>
+        <p class="section-desc">Seleziona gli obiettivi da aggiungere ai tuoi intervalli</p>
+
+        <!-- Obiettivi giornalieri -->
+        <div class="goals-category">
+          <h3 class="category-title">
+            <span class="category-icon">☀️</span>
+            Obiettivi Giornalieri
+          </h3>
+          <div class="goals-grid">
+            <% goals.daily.forEach(goal => { %>
+              <div class="goal-card" data-goal-id="<%= goal.id %>">
+                <div class="goal-header">
+                  <h4><%= goal.name %></h4>
+                  <span class="goal-coins">💰 <%= goal.coins_reward %></span>
+                </div>
+                <p class="goal-desc"><%= goal.description %></p>
+                <button class="btn btn-sm btn-outline add-goal-btn" data-goal-id="<%= goal.id %>">
+                  + Aggiungi
+                </button>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+
+        <!-- Obiettivi mensili -->
+        <div class="goals-category">
+          <h3 class="category-title">
+            <span class="category-icon">📅</span>
+            Obiettivi Mensili
+          </h3>
+          <div class="goals-grid">
+            <% goals.monthly.forEach(goal => { %>
+              <div class="goal-card" data-goal-id="<%= goal.id %>">
+                <div class="goal-header">
+                  <h4><%= goal.name %></h4>
+                  <span class="goal-coins">💰 <%= goal.coins_reward %></span>
+                </div>
+                <p class="goal-desc"><%= goal.description %></p>
+                <button class="btn btn-sm btn-outline add-goal-btn" data-goal-id="<%= goal.id %>">
+                  + Aggiungi
+                </button>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+
+        <!-- Obiettivi annuali -->
+        <div class="goals-category">
+          <h3 class="category-title">
+            <span class="category-icon">🌟</span>
+            Obiettivi Annuali
+          </h3>
+          <div class="goals-grid">
+            <% goals.yearly.forEach(goal => { %>
+              <div class="goal-card" data-goal-id="<%= goal.id %>">
+                <div class="goal-header">
+                  <h4><%= goal.name %></h4>
+                  <span class="goal-coins">💰 <%= goal.coins_reward %></span>
+                </div>
+                <p class="goal-desc"><%= goal.description %></p>
+                <button class="btn btn-sm btn-outline add-goal-btn" data-goal-id="<%= goal.id %>">
+                  + Aggiungi
+                </button>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      </section>
+
+      <!-- Intervalli attivi dell'utente -->
+      <section class="user-intervals">
+        <h2>I Tuoi Intervalli Attivi</h2>
+        
+        <% if (intervals.length === 0) { %>
+          <div class="empty-state">
+            <p>Non hai ancora creato intervalli di obiettivi.</p>
+            <p>Crea il tuo primo intervallo per iniziare a tracciare i tuoi progressi!</p>
+          </div>
+        <% } else { %>
+          <div class="intervals-list" id="intervalsList">
+            <% intervals.forEach(interval => { %>
+              <div class="interval-card" data-interval-id="<%= interval.id %>">
+                <div class="interval-header">
+                  <span class="interval-type badge badge-<%= interval.interval_type %>">
+                    <%= interval.interval_type === 'daily' ? 'Giornaliero' : interval.interval_type === 'monthly' ? 'Mensile' : 'Annuale' %>
+                  </span>
+                  <span class="interval-dates">
+                    <%= new Date(interval.start_date).toLocaleDateString('it-IT') %> - 
+                    <%= new Date(interval.end_date).toLocaleDateString('it-IT') %>
+                  </span>
+                  <button class="btn-icon-only delete-interval" data-interval-id="<%= interval.id %>" title="Elimina">
+                    🗑️
+                  </button>
+                </div>
+                <div class="interval-goals">
+                  <% 
+                    let goalIds = [];
+                    try {
+                      goalIds = JSON.parse(interval.goal_ids || '[]');
+                    } catch(e) {}
+                  %>
+                  <% if (goalIds.length === 0) { %>
+                    <p class="no-goals">Nessun obiettivo assegnato</p>
+                  <% } else { %>
+                    <p><%= goalIds.length %> obiettivi assegnati</p>
+                  <% } %>
+                </div>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </section>
+
+      <!-- Modale aggiunta obiettivo -->
+      <div class="modal hidden" id="addGoalModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+          <h3>Seleziona Intervallo</h3>
+          <p>A quale intervallo vuoi aggiungere questo obiettivo?</p>
+          <div class="modal-intervals" id="modalIntervals">
+            <!-- Popolato via JavaScript -->
+          </div>
+          <button class="btn btn-link" onclick="closeModal()">Annulla</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+  <script>
+    const userIntervals = <%- JSON.stringify(intervals) %>;
+    const userId = '<%= user.id %>';
+  </script>
+  <script src="/js/obiettivi.js"></script>
+  <script src="/js/principale.js"></script>
+</body>
+</html>

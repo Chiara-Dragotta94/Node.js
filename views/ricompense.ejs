@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/stile.css">
+</head>
+<body>
+  <%- include('partials/navbar') %>
+  
+  <main class="rewards-page">
+    <div class="container">
+      <%- include('partials/messaggi') %>
+      
+      <section class="page-header">
+        <h1>🎁 Ricompense e Impatto</h1>
+        <p>Trasforma i tuoi progressi in un impatto positivo sul pianeta</p>
+      </section>
+
+      <!-- Saldo monete -->
+      <section class="coins-balance card">
+        <div class="balance-display">
+          <span class="balance-icon">💰</span>
+          <div class="balance-info">
+            <span class="balance-amount"><%= coins %></span>
+            <span class="balance-label">Monete disponibili</span>
+          </div>
+        </div>
+        <div class="balance-actions">
+          <a href="/timer" class="btn btn-primary">Medita per guadagnare</a>
+          <a href="/obiettivi" class="btn btn-outline">Completa obiettivi</a>
+        </div>
+      </section>
+
+      <!-- Statistiche impatto -->
+      <section class="impact-stats">
+        <div class="stat-card card">
+          <div class="stat-icon">🌳</div>
+          <div class="stat-info">
+            <span class="stat-value"><%= stats.trees_planted %></span>
+            <span class="stat-label">Alberi piantati</span>
+          </div>
+        </div>
+        
+        <div class="stat-card card">
+          <div class="stat-icon">💚</div>
+          <div class="stat-info">
+            <span class="stat-value"><%= stats.total_donated %> 💰</span>
+            <span class="stat-label">Monete donate</span>
+          </div>
+        </div>
+        
+        <div class="stat-card card">
+          <div class="stat-icon">🌍</div>
+          <div class="stat-info">
+            <span class="stat-value"><%= Math.round(stats.trees_planted * 21) %></span>
+            <span class="stat-label">kg CO₂ assorbita/anno</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Progetti disponibili -->
+      <section class="available-projects">
+        <h2>🌱 Progetti Disponibili</h2>
+        <p class="section-desc">Usa le tue monete per supportare questi progetti a impatto sociale e ambientale</p>
+        
+        <div class="projects-grid">
+          <% projects.forEach(project => { %>
+            <div class="project-card card">
+              <div class="project-header">
+                <span class="project-type <%= project.type %>">
+                  <%= project.type === 'tree' ? '🌳 Albero' : '💚 Donazione' %>
+                </span>
+                <span class="project-cost">💰 <%= project.cost %></span>
+              </div>
+              <h3 class="project-name"><%= project.name %></h3>
+              <p class="project-desc"><%= project.description %></p>
+              <button class="btn btn-primary btn-block donate-btn" 
+                      data-project-id="<%= project.id %>"
+                      data-project-name="<%= project.name %>"
+                      data-project-type="<%= project.type %>"
+                      data-project-cost="<%= project.cost %>"
+                      <%= coins < project.cost ? 'disabled' : '' %>>
+                <%= coins < project.cost ? '💰 Monete insufficienti' : '💰 Supporta' %>
+              </button>
+            </div>
+          <% }); %>
+        </div>
+      </section>
+
+      <!-- Come guadagnare -->
+      <section class="how-to-earn card">
+        <h2>💰 Come guadagnare monete</h2>
+        <div class="earn-methods">
+          <div class="earn-method">
+            <span class="earn-icon">🧘</span>
+            <div class="earn-info">
+              <h4>Meditazione</h4>
+              <p>💰 1 moneta per minuto meditato</p>
+            </div>
+          </div>
+          <div class="earn-method">
+            <span class="earn-icon">🎯</span>
+            <div class="earn-info">
+              <h4>Obiettivi giornalieri</h4>
+              <p>💰 5-10 monete per obiettivo</p>
+            </div>
+          </div>
+          <div class="earn-method">
+            <span class="earn-icon">📅</span>
+            <div class="earn-info">
+              <h4>Obiettivi mensili</h4>
+              <p>💰 30-100 monete per obiettivo</p>
+            </div>
+          </div>
+          <div class="earn-method">
+            <span class="earn-icon">🌟</span>
+            <div class="earn-info">
+              <h4>Obiettivi annuali</h4>
+              <p>💰 200-1000 monete per obiettivo</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Storico donazioni -->
+      <section class="donation-history">
+        <h2>📜 Le Tue Donazioni</h2>
+        
+        <% if (donations.length === 0) { %>
+          <div class="empty-state card">
+            <div class="empty-icon">🌱</div>
+            <h3>Non hai ancora fatto donazioni</h3>
+            <p>Inizia a meditare e completare obiettivi per guadagnare monete 💰 e fare la differenza!</p>
+          </div>
+        <% } else { %>
+          <div class="donations-list">
+            <% donations.forEach(donation => { %>
+              <div class="donation-item card">
+                <div class="donation-icon">
+                  <%= donation.type === 'tree' ? '🌳' : '💚' %>
+                </div>
+                <div class="donation-info">
+                  <h4><%= donation.project_name || (donation.type === 'tree' ? 'Albero piantato' : 'Donazione') %></h4>
+                  <span class="donation-date">
+                    <%= new Date(donation.created_at).toLocaleDateString('it-IT', { 
+                      day: 'numeric', 
+                      month: 'long', 
+                      year: 'numeric' 
+                    }) %>
+                  </span>
+                </div>
+                <div class="donation-amount">
+                  💰 <%= donation.coins_spent %>
+                </div>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </section>
+
+      <!-- Informazioni impatto ambientale -->
+      <section class="impact-info card">
+        <div class="impact-header">
+          <span class="impact-icon">🌿</span>
+          <h3>Il nostro impegno per l'ambiente</h3>
+        </div>
+        <p>I server di MeditActive sono alimentati al 100% da energia rinnovabile. Ogni albero che pianti attraverso la nostra piattaforma viene realmente piantato in collaborazione con organizzazioni certificate.</p>
+        <div class="impact-partners">
+          <span class="partner">🌲 One Tree Planted</span>
+          <span class="partner">🌍 Trees for the Future</span>
+          <span class="partner">🌱 Eden Reforestation</span>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <%- include('partials/footer') %>
+  <script>
+    const userCoins = <%= coins %>;
+  </script>
+  <script src="/js/ricompense.js"></script>
+  <script src="/js/principale.js"></script>
+</body>
+</html>

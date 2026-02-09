@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/stile.css">
+</head>
+<body class="auth-page">
+  <%- include('partials/navbar') %>
+  
+  <main class="auth-main">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-icon">🧘</div>
+          <h1>Crea il tuo account</h1>
+          <p>Inizia il tuo percorso verso l'equilibrio interiore</p>
+        </div>
+        
+        <%- include('partials/messaggi') %>
+        
+        <form class="auth-form" action="/registrazione" method="POST">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="nome">Nome</label>
+              <input type="text" id="nome" name="nome" value="<%= typeof nome !== 'undefined' ? nome : '' %>" required placeholder="Il tuo nome">
+            </div>
+            
+            <div class="form-group">
+              <label for="cognome">Cognome</label>
+              <input type="text" id="cognome" name="cognome" value="<%= typeof cognome !== 'undefined' ? cognome : '' %>" required placeholder="Il tuo cognome">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" value="<%= typeof email !== 'undefined' ? email : '' %>" required placeholder="la-tua@email.com">
+          </div>
+          
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required placeholder="Minimo 6 caratteri" minlength="6">
+          </div>
+          
+          <div class="form-group">
+            <label for="confirmPassword">Conferma Password</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="Ripeti la password">
+          </div>
+          
+          <button type="submit" class="btn btn-primary btn-block">Registrati</button>
+        </form>
+        
+        <div class="auth-footer">
+          <p>Hai già un account? <a href="/accesso">Accedi</a></p>
+        </div>
+        
+        <div class="auth-benefits">
+          <h4>Con MeditActive potrai:</h4>
+          <ul>
+            <li>✓ Meditare con timer personalizzati</li>
+            <li>✓ Tracciare i tuoi obiettivi</li>
+            <li>✓ Guadagnare monete virtuali 💰</li>
+            <li>✓ Piantare alberi reali</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <script src="/js/principale.js"></script>
+</body>
+</html>

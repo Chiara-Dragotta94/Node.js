@@ -1,0 +1,35 @@
+<% if (typeof success_msg !== 'undefined' && success_msg.length > 0) { %>
+  <div class="alert alert-success">
+    <span class="alert-icon">✓</span>
+    <%= success_msg %>
+    <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+  </div>
+<% } %>
+
+<% if (typeof error_msg !== 'undefined' && error_msg.length > 0) { %>
+  <div class="alert alert-error">
+    <span class="alert-icon">!</span>
+    <%= error_msg %>
+    <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+  </div>
+<% } %>
+
+<% if (typeof errors !== 'undefined' && errors && errors.length > 0) { %>
+  <div class="alert alert-error">
+    <span class="alert-icon">!</span>
+    <ul class="alert-list">
+      <% errors.forEach(e => { %>
+        <li><%= e %></li>
+      <% }); %>
+    </ul>
+    <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+  </div>
+<% } %>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error">
+    <span class="alert-icon">!</span>
+    <%= error %>
+    <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+  </div>
+<% } %>
