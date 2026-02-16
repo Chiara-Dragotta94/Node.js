@@ -28,7 +28,19 @@ const reindirizzaSeLoggato = (req, res, next) => {
   next();
 };
 
+// Verifico che l'utente stia modificando solo il proprio profilo
+const soloProprioProfilo = (req, res, next) => {
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({ error: 'Non autorizzato' });
+  }
+  if (String(req.session.user.id) !== String(req.params.id)) {
+    return res.status(403).json({ error: 'Puoi modificare solo il tuo profilo' });
+  }
+  next();
+};
+
 module.exports = {
   verificaLogin,
-  reindirizzaSeLoggato
+  reindirizzaSeLoggato,
+  soloProprioProfilo
 };

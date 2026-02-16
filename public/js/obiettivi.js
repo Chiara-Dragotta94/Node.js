@@ -60,6 +60,7 @@ async function creaIntervallo(e) {
   e.preventDefault();
   
   const formData = new FormData(e.target);
+  const userId = (window.appData && window.appData.userId) || '';
   const dati = {
     user_id: userId,
     start_date: formData.get('start_date'),
@@ -93,13 +94,14 @@ function mostraModalObiettivo(idObiettivo) {
   idObiettivoSelezionato = idObiettivo;
   const modal = document.getElementById('addGoalModal');
   const listaIntervalli = document.getElementById('modalIntervals');
+  const intervalli = (window.appData && window.appData.userIntervals) || [];
   
-  if (!userIntervals || userIntervals.length === 0) {
+  if (!intervalli.length) {
     window.MeditActive.showNotification('Crea prima un intervallo per aggiungere obiettivi', 'error');
     return;
   }
   
-  listaIntervalli.innerHTML = userIntervals.map(intervallo => `
+  listaIntervalli.innerHTML = intervalli.map(intervallo => `
     <button class="btn btn-outline" onclick="aggiungiObiettivoAIntervallo(${intervallo.id})" style="margin: 5px; width: 100%;">
       ${ottieniEtichettaTipo(intervallo.interval_type)} - 
       ${new Date(intervallo.start_date).toLocaleDateString('it-IT')} - 

@@ -55,14 +55,23 @@ npm run dev
 ```
 ├── server.js                    # Punto di ingresso dell'applicazione
 ├── config/
-│   └── database.js              # Connessione MySQL e helper per le query
+│   └── database.js              # Connessione MySQL, transazioni, prepared statement
+├── constants/
+│   └── costanti.js              # Costanti condivise (bcrypt, sessione, tipi intervallo)
 ├── middleware/
-│   └── autenticazione.js        # Middleware di autenticazione
+│   └── autenticazione.js        # verificaLogin, soloProprioProfilo, reindirizzaSeLoggato
 ├── controllers/
-│   ├── gestoreUtenti.js         # CRUD utenti e autenticazione
+│   ├── gestoreUtenti.js         # CRUD utenti e autenticazione API
+│   ├── gestoreAutenticazione.js # Registrazione, login e aggiornamento profilo (form)
 │   ├── gestoreObiettivi.js      # CRUD obiettivi predefiniti
-│   ├── gestoreIntervalli.js     # CRUD intervalli e associazioni
-│   └── gestoreDiario.js         # Diario, sessioni e donazioni
+│   ├── gestoreIntervalli.js     # CRUD intervalli, N+1 evitato con query batch
+│   └── gestoreDiario.js         # Diario, sessioni, donazioni (con transazioni)
+├── services/
+│   └── ObiettiviService.js      # Logica business complessa per obiettivi (completamento)
+├── utils/
+│   ├── asyncHandler.js         # Wrapper per gestione errori async
+│   ├── buildUpdateQuery.js     # Helper per costruire query UPDATE dinamiche
+│   └── validaRichiesta.js      # Middleware per express-validator
 ├── routes/
 │   ├── pagine.js                # Rotte delle pagine (viste)
 │   └── api/
@@ -166,10 +175,15 @@ I test coprono:
 
 ## Sicurezza
 
-- Password cifrate con **bcrypt** (10 round di salt)
+- Password cifrate con **bcrypt** (round configurabili in `constants/costanti.js`)
 - Tutte le query usano **prepared statement** per prevenire SQL Injection
 - Sessioni gestite lato server con cookie sicuri
-- Validazione input su tutti gli endpoint
+- **PUT/PATCH utenti**: solo l'utente può modificare il proprio profilo (middleware `soloProprioProfilo`)
+- **Diario, statistiche, donazioni**: l'ID utente viene preso solo dalla sessione, mai da parametri
+- **Obiettivi e intervalli**: creazione, modifica ed eliminazione richiedono login
+- **Donazioni e completamento obiettivi**: operazioni in **transazione** (tutto o niente)
+- **Validazione input** con **express-validator** sulle principali rotte API (`users`, `goals`, `intervals`, `diary`)
+- **Service layer** per logica business complessa: `ObiettiviService` orchestra il completamento degli obiettivi (verifica, aggiornamento stato, assegnazione monete)
 
 ## Tecnologie
 
@@ -178,4 +192,5 @@ I test coprono:
 - **EJS** - Template engine
 - **bcryptjs** - Cifratura password
 - **express-session** - Gestione sessioni
+- **express-validator** - Validazione dei dati in ingresso
 - **Mocha** + **Chai** + **Sinon** - Unit testing

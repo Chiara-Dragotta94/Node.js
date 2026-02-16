@@ -1,5 +1,7 @@
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
+const { BCRYPT_ROUNDS } = require('../constants/costanti');
+const buildUpdateQuery = require('../utils/buildUpdateQuery');
 
 /*
   Gestore degli utenti.
@@ -56,7 +58,7 @@ const crea = async (req, res) => {
     }
     
     // Cifro la password prima di salvarla
-    const passwordCifrata = await bcrypt.hash(password, 10);
+    const passwordCifrata = await bcrypt.hash(password, BCRYPT_ROUNDS);
     
     const idUtente = await db.insert(
       'INSERT INTO users (email, password, nome, cognome) VALUES (?, ?, ?, ?)',
@@ -96,26 +98,21 @@ const aggiorna = async (req, res) => {
     }
     
     // Costruisco la query di aggiornamento in base ai campi ricevuti
-    const campiDaAggiornare = [];
-    const valori = [];
-    
-    if (email) { campiDaAggiornare.push('email = ?'); valori.push(email); }
-    if (nome) { campiDaAggiornare.push('nome = ?'); valori.push(nome); }
-    if (cognome) { campiDaAggiornare.push('cognome = ?'); valori.push(cognome); }
+    const datiAggiornati = {};
+    if (email) datiAggiornati.email = email;
+    if (nome) datiAggiornati.nome = nome;
+    if (cognome) datiAggiornati.cognome = cognome;
     if (password) { 
-      const passwordCifrata = await bcrypt.hash(password, 10);
-      campiDaAggiornare.push('password = ?'); 
-      valori.push(passwordCifrata); 
+      // Per la password devo comunque cifrare qui e poi passare il valore risultante
+      const passwordCifrata = await bcrypt.hash(password, BCRYPT_ROUNDS);
+      datiAggiornati.password = passwordCifrata;
     }
     
-    if (campiDaAggiornare.length === 0) {
+    const update = buildUpdateQuery('users', datiAggiornati, 'WHERE id = ?', [idUtente]);
+    if (!update) {
       return res.status(400).json({ error: 'Nessun campo da aggiornare' });
     }
-    
-    valori.push(idUtente);
-    await db.execute(
-      `UPDATE users SET ${campiDaAggiornare.join(', ')} WHERE id = ?`, valori
-    );
+    await db.execute(update.sql, update.values);
     
     const utenteAggiornato = await db.queryOne(
       'SELECT id, email, nome, cognome, coins, created_at, updated_at FROM users WHERE id = ?',

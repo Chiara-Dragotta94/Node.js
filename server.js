@@ -3,6 +3,7 @@ const express = require('express');
 const session = require('express-session');
 const flash = require('connect-flash');
 const path = require('path');
+const { SESSION_MAX_AGE_MS } = require('./constants/costanti');
 
 // Importo la configurazione del database
 const db = require('./config/database');
@@ -33,7 +34,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: { 
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: SESSION_MAX_AGE_MS
   }
 }));
 

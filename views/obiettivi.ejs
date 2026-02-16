@@ -181,8 +181,10 @@
 
   <%- include('partials/footer') %>
   <script>
-    const userIntervals = <%- JSON.stringify(intervals) %>;
-    const userId = '<%= user.id %>';
+    window.appData = {
+      userId: '<%= user && user.id ? user.id : "" %>',
+      userIntervals: <%- JSON.stringify(typeof intervals !== "undefined" ? intervals : []) %>
+    };
   </script>
   <script src="/js/obiettivi.js"></script>
   <script src="/js/principale.js"></script>

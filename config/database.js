@@ -61,11 +61,31 @@ const execute = async (sql, parametri = []) => {
   return risultato.affectedRows;
 };
 
+/*
+  Eseguo più operazioni in una transazione: o tutte riescono o nessuna.
+  Uso questa funzione per donazioni e completamento obiettivi.
+*/
+const withTransaction = async (callback) => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const risultato = await callback(conn);
+    await conn.commit();
+    return risultato;
+  } catch (errore) {
+    await conn.rollback();
+    throw errore;
+  } finally {
+    conn.release();
+  }
+};
+
 module.exports = {
   pool,
   testConnection,
   query,
   queryOne,
   insert,
-  execute
+  execute,
+  withTransaction
 };

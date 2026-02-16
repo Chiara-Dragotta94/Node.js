@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const buildUpdateQuery = require('../utils/buildUpdateQuery');
 
 /*
   Gestore del diario, delle sessioni di meditazione e delle donazioni.
@@ -6,10 +7,10 @@ const db = require('../config/database');
   dell'utente: voci di diario, timer completati e ricompense donate.
 */
 
-// Restituisco tutte le voci del diario dell'utente
+// Restituisco tutte le voci del diario dell'utente (solo dalla sessione, mai da parametri)
 const ottieniVociDiario = async (req, res) => {
   try {
-    const idUtente = req.session?.user?.id || req.params.userId;
+    const idUtente = req.session?.user?.id;
     if (!idUtente) return res.status(401).json({ error: 'Non autorizzato' });
     
     const voci = await db.query(
@@ -74,19 +75,18 @@ const aggiornaVoce = async (req, res) => {
     );
     if (!voce) return res.status(404).json({ error: 'Voce non trovata' });
     
-    const campi = [];
-    const valori = [];
-    if (title !== undefined) { campi.push('title = ?'); valori.push(title); }
-    if (content !== undefined) { campi.push('content = ?'); valori.push(content); }
-    if (mood !== undefined) { campi.push('mood = ?'); valori.push(mood); }
-    if (meditation_minutes !== undefined) { campi.push('meditation_minutes = ?'); valori.push(meditation_minutes); }
-    
-    if (campi.length === 0) {
+    const datiAggiornati = {};
+    if (title !== undefined) datiAggiornati.title = title;
+    if (content !== undefined) datiAggiornati.content = content;
+    if (mood !== undefined) datiAggiornati.mood = mood;
+    if (meditation_minutes !== undefined) datiAggiornati.meditation_minutes = meditation_minutes;
+
+    const update = buildUpdateQuery('diary_entries', datiAggiornati, 'WHERE id = ?', [idVoce]);
+    if (!update) {
       return res.status(400).json({ error: 'Nessun campo da aggiornare' });
     }
     
-    valori.push(idVoce);
-    await db.execute(`UPDATE diary_entries SET ${campi.join(', ')} WHERE id = ?`, valori);
+    await db.execute(update.sql, update.values);
     
     const aggiornata = await db.queryOne('SELECT * FROM diary_entries WHERE id = ?', [idVoce]);
     res.json(aggiornata);
@@ -147,16 +147,16 @@ const salvaSessione = async (req, res) => {
   }
 };
 
-// Restituisco le statistiche sulle meditazioni dell'utente
+// Restituisco le statistiche sulle meditazioni dell'utente (solo dalla sessione)
 const ottieniStatistiche = async (req, res) => {
   try {
-    const idUtente = req.session?.user?.id || req.params.userId;
+    const idUtente = req.session?.user?.id;
     if (!idUtente) return res.status(401).json({ error: 'Non autorizzato' });
     
     const statistiche = await db.queryOne(`
       SELECT COUNT(*) as total_sessions,
         COALESCE(SUM(duration_minutes), 0) as total_minutes,
-        COALESCE(AVG(duration_minutes), 0) as avg_duration,
+        ROUND(COALESCE(AVG(duration_minutes), 0), 1) as avg_duration,
         COALESCE(MAX(duration_minutes), 0) as longest_session
       FROM meditation_sessions WHERE user_id = ?
     `, [idUtente]);
@@ -176,7 +176,7 @@ const ottieniStatistiche = async (req, res) => {
   }
 };
 
-// Creo una donazione: l'utente spende monete per piantare un albero o sostenere un progetto
+// Creo una donazione: uso una transazione così monete e donazione restano coerenti
 const creaDonazione = async (req, res) => {
   try {
     const idUtente = req.session?.user?.id;
@@ -186,36 +186,39 @@ const creaDonazione = async (req, res) => {
     if (!type || !coins_spent) return res.status(400).json({ error: 'Tipo e monete sono obbligatori' });
     if (!['tree', 'donation'].includes(type)) return res.status(400).json({ error: 'Tipo non valido' });
     
-    // Verifico che l'utente abbia abbastanza monete
-    const utente = await db.queryOne('SELECT coins FROM users WHERE id = ?', [idUtente]);
-    if (utente.coins < coins_spent) {
-      return res.status(400).json({ error: 'Monete insufficienti' });
-    }
+    const idDonazione = await db.withTransaction(async (conn) => {
+      const [[utente]] = await conn.execute('SELECT coins FROM users WHERE id = ?', [idUtente]);
+      if (!utente || utente.coins < coins_spent) {
+        const err = new Error('Monete insufficienti');
+        err.statusCode = 400;
+        throw err;
+      }
+      await conn.execute('UPDATE users SET coins = coins - ? WHERE id = ?', [coins_spent, idUtente]);
+      const [ins] = await conn.execute(
+        'INSERT INTO donations (user_id, type, coins_spent, project_name) VALUES (?, ?, ?, ?)',
+        [idUtente, type, coins_spent, project_name || null]
+      );
+      return ins.insertId;
+    });
     
-    // Sottraggo le monete e creo la donazione
-    await db.execute('UPDATE users SET coins = coins - ? WHERE id = ?', [coins_spent, idUtente]);
-    
-    const idDonazione = await db.insert(
-      'INSERT INTO donations (user_id, type, coins_spent, project_name) VALUES (?, ?, ?, ?)',
-      [idUtente, type, coins_spent, project_name || null]
-    );
-    
-    // Aggiorno le monete nella sessione
     const utenteAggiornato = await db.queryOne('SELECT coins FROM users WHERE id = ?', [idUtente]);
     if (req.session.user) req.session.user.coins = utenteAggiornato.coins;
     
     const donazione = await db.queryOne('SELECT * FROM donations WHERE id = ?', [idDonazione]);
     res.status(201).json(donazione);
   } catch (errore) {
+    if (errore.statusCode === 400) {
+      return res.status(400).json({ error: errore.message });
+    }
     console.error('Errore donazione:', errore);
     res.status(500).json({ error: 'Errore nella creazione della donazione' });
   }
 };
 
-// Restituisco lo storico delle donazioni dell'utente con statistiche
+// Restituisco lo storico delle donazioni dell'utente (solo dalla sessione)
 const ottieniDonazioni = async (req, res) => {
   try {
-    const idUtente = req.session?.user?.id || req.params.userId;
+    const idUtente = req.session?.user?.id;
     if (!idUtente) return res.status(401).json({ error: 'Non autorizzato' });
     
     const donazioni = await db.query(

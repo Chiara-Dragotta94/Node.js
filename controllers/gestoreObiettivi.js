@@ -1,4 +1,6 @@
 const db = require('../config/database');
+const { TIPI_INTERVALLO } = require('../constants/costanti');
+const buildUpdateQuery = require('../utils/buildUpdateQuery');
 
 /*
   Gestore degli obiettivi predefiniti.
@@ -15,7 +17,7 @@ const ottieniTutti = async (req, res) => {
     const parametri = [];
     
     // Valido la categoria per evitare valori inattesi
-    if (category && ['daily', 'monthly', 'yearly'].includes(category)) {
+    if (category && TIPI_INTERVALLO.includes(category)) {
       sql += ' WHERE category = ?';
       parametri.push(category);
     }
@@ -51,7 +53,7 @@ const crea = async (req, res) => {
     if (!name || !category) {
       return res.status(400).json({ error: 'Nome e categoria sono obbligatori' });
     }
-    if (!['daily', 'monthly', 'yearly'].includes(category)) {
+    if (!TIPI_INTERVALLO.includes(category)) {
       return res.status(400).json({ error: 'Categoria non valida. Usa: daily, monthly, yearly' });
     }
     
@@ -79,23 +81,22 @@ const aggiorna = async (req, res) => {
       return res.status(404).json({ error: 'Obiettivo non trovato' });
     }
     
-    if (category && !['daily', 'monthly', 'yearly'].includes(category)) {
+    if (category && !TIPI_INTERVALLO.includes(category)) {
       return res.status(400).json({ error: 'Categoria non valida' });
     }
     
-    const campi = [];
-    const valori = [];
-    if (name) { campi.push('name = ?'); valori.push(name); }
-    if (description !== undefined) { campi.push('description = ?'); valori.push(description); }
-    if (category) { campi.push('category = ?'); valori.push(category); }
-    if (coins_reward !== undefined) { campi.push('coins_reward = ?'); valori.push(coins_reward); }
-    
-    if (campi.length === 0) {
+    // Costruisco in modo riutilizzabile la UPDATE invece di ripetere array di campi/valori
+    const datiAggiornati = {};
+    if (name) datiAggiornati.name = name;
+    if (description !== undefined) datiAggiornati.description = description;
+    if (category) datiAggiornati.category = category;
+    if (coins_reward !== undefined) datiAggiornati.coins_reward = coins_reward;
+
+    const update = buildUpdateQuery('goals', datiAggiornati, 'WHERE id = ?', [idObiettivo]);
+    if (!update) {
       return res.status(400).json({ error: 'Nessun campo da aggiornare' });
     }
-    
-    valori.push(idObiettivo);
-    await db.execute(`UPDATE goals SET ${campi.join(', ')} WHERE id = ?`, valori);
+    await db.execute(update.sql, update.values);
     
     const aggiornato = await db.queryOne('SELECT * FROM goals WHERE id = ?', [idObiettivo]);
     res.json(aggiornato);

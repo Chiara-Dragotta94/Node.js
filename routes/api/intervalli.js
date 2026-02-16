@@ -1,23 +1,39 @@
 const express = require('express');
+const { body } = require('express-validator');
 const router = express.Router();
 const gestore = require('../../controllers/gestoreIntervalli');
 const { verificaLogin } = require('../../middleware/autenticazione');
+const validaRichiesta = require('../../utils/validaRichiesta');
+const { TIPI_INTERVALLO } = require('../../constants/costanti');
 
 /*
-  Rotte API per gli intervalli di obiettivi.
-  La GET principale supporta filtri: user_id, start_date, end_date, goal_id, interval_type.
-  Il completamento di un obiettivo richiede autenticazione perché assegna monete.
+  Rotte API per gli intervalli. Le GET restano pubbliche;
+  creazione, modifica, eliminazione e associazioni obiettivi richiedono login.
 */
 
-router.get('/', gestore.ottieniTutti);                     // Ottengo tutti gli intervalli (con filtri opzionali)
-router.get('/:id', gestore.ottieniPerId);                  // Ottengo un singolo intervallo per ID
-router.get('/user/:userId', gestore.ottieniPerUtente);     // Ottengo gli intervalli di uno specifico utente
-router.post('/', gestore.crea);                            // Creo un nuovo intervallo di obiettivi
-router.put('/:id', gestore.aggiorna);                      // Aggiorno un intervallo esistente
-router.patch('/:id', gestore.aggiorna);                    // Aggiorno parzialmente un intervallo
-router.delete('/:id', gestore.elimina);                    // Elimino un intervallo
-router.post('/:id/goals', gestore.aggiungiObiettivo);     // Associo un obiettivo a un intervallo
-router.delete('/:id/goals/:goalId', gestore.rimuoviObiettivo);  // Rimuovo un obiettivo da un intervallo
-router.post('/:id/goals/:goalId/complete', verificaLogin, gestore.completaObiettivo); // Segno un obiettivo come completato
+router.get('/', gestore.ottieniTutti);
+router.get('/user/:userId', gestore.ottieniPerUtente);
+router.get('/:id', gestore.ottieniPerId);
+
+router.post(
+  '/',
+  verificaLogin,
+  [
+    body('user_id').isInt().withMessage('user_id è obbligatorio'),
+    body('start_date').notEmpty().withMessage('La data di inizio è obbligatoria'),
+    body('end_date').notEmpty().withMessage('La data di fine è obbligatoria'),
+    body('interval_type')
+      .isIn(TIPI_INTERVALLO)
+      .withMessage('Tipo di intervallo non valido')
+  ],
+  validaRichiesta,
+  gestore.crea
+);
+router.put('/:id', verificaLogin, gestore.aggiorna);
+router.patch('/:id', verificaLogin, gestore.aggiorna);
+router.delete('/:id', verificaLogin, gestore.elimina);
+router.post('/:id/goals', verificaLogin, gestore.aggiungiObiettivo);
+router.delete('/:id/goals/:goalId', verificaLogin, gestore.rimuoviObiettivo);
+router.post('/:id/goals/:goalId/complete', verificaLogin, gestore.completaObiettivo);
 
 module.exports = router;

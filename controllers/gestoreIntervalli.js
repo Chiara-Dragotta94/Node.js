@@ -1,17 +1,38 @@
 const db = require('../config/database');
+const { TIPI_INTERVALLO } = require('../constants/costanti');
+const buildUpdateQuery = require('../utils/buildUpdateQuery');
+const obiettiviService = require('../services/ObiettiviService');
 
 /*
   Gestore degli intervalli di obiettivi.
-  Qui gestisco i periodi temporali (giornaliero, mensile, annuale) 
-  a cui l'utente associa i propri obiettivi da completare.
+  Uso una sola query per recuperare gli obiettivi di più intervalli
+  invece di una query per intervallo (N+1).
 */
+
+// Recupero gli obiettivi per una lista di intervalli in una sola query; restituisco una mappa idIntervallo -> goals
+const _obiettiviPerIntervalli = async (idsIntervalli) => {
+  if (!idsIntervalli.length) return {};
+  const placeholders = idsIntervalli.map(() => '?').join(',');
+  const righe = await db.query(`
+    SELECT g.*, ig.interval_id, ig.completed, ig.completed_at
+    FROM interval_goals ig
+    JOIN goals g ON ig.goal_id = g.id
+    WHERE ig.interval_id IN (${placeholders})
+  `, idsIntervalli);
+  const mappa = {};
+  for (const id of idsIntervalli) mappa[id] = [];
+  for (const r of righe) {
+    const { interval_id, ...goal } = r;
+    mappa[interval_id].push(goal);
+  }
+  return mappa;
+};
 
 // Restituisco tutti gli intervalli, con diversi filtri opzionali via query string
 const ottieniTutti = async (req, res) => {
   try {
     const { user_id, start_date, end_date, goal_id, interval_type } = req.query;
     
-    // Se filtro per obiettivo, devo fare un JOIN con la tabella di associazione
     let sql;
     if (goal_id) {
       sql = `
@@ -29,26 +50,19 @@ const ottieniTutti = async (req, res) => {
     }
     
     const parametri = goal_id ? [goal_id] : [];
-    
     if (user_id) { sql += ' AND gi.user_id = ?'; parametri.push(user_id); }
     if (start_date) { sql += ' AND gi.start_date >= ?'; parametri.push(start_date); }
     if (end_date) { sql += ' AND gi.end_date <= ?'; parametri.push(end_date); }
-    if (interval_type && ['daily', 'monthly', 'yearly'].includes(interval_type)) {
+    if (interval_type && TIPI_INTERVALLO.includes(interval_type)) {
       sql += ' AND gi.interval_type = ?'; parametri.push(interval_type);
     }
-    
     sql += ' ORDER BY gi.start_date DESC';
     
     const intervalli = await db.query(sql, parametri);
-    
-    // Per ogni intervallo, recupero gli obiettivi associati
-    for (let intervallo of intervalli) {
-      intervallo.goals = await db.query(`
-        SELECT g.*, ig.completed, ig.completed_at
-        FROM interval_goals ig
-        JOIN goals g ON ig.goal_id = g.id
-        WHERE ig.interval_id = ?
-      `, [intervallo.id]);
+    const ids = intervalli.map((i) => i.id);
+    const obiettiviPerId = await _obiettiviPerIntervalli(ids);
+    for (const intervallo of intervalli) {
+      intervallo.goals = obiettiviPerId[intervallo.id] || [];
     }
     
     res.json(intervalli);
@@ -68,16 +82,10 @@ const ottieniPerId = async (req, res) => {
       WHERE gi.id = ?
     `, [req.params.id]);
     
-    if (!intervallo) {
-      return res.status(404).json({ error: 'Intervallo non trovato' });
-    }
+    if (!intervallo) return res.status(404).json({ error: 'Intervallo non trovato' });
     
-    intervallo.goals = await db.query(`
-      SELECT g.*, ig.completed, ig.completed_at
-      FROM interval_goals ig JOIN goals g ON ig.goal_id = g.id
-      WHERE ig.interval_id = ?
-    `, [req.params.id]);
-    
+    const obiettiviMap = await _obiettiviPerIntervalli([intervallo.id]);
+    intervallo.goals = obiettiviMap[intervallo.id] || [];
     res.json(intervallo);
   } catch (errore) {
     console.error('Errore recupero intervallo:', errore);
@@ -93,7 +101,7 @@ const crea = async (req, res) => {
     if (!user_id || !start_date || !end_date || !interval_type) {
       return res.status(400).json({ error: 'user_id, start_date, end_date e interval_type sono obbligatori' });
     }
-    if (!['daily', 'monthly', 'yearly'].includes(interval_type)) {
+    if (!TIPI_INTERVALLO.includes(interval_type)) {
       return res.status(400).json({ error: 'interval_type non valido. Usa: daily, monthly, yearly' });
     }
     
@@ -125,19 +133,13 @@ const crea = async (req, res) => {
       }
     }
     
-    // Restituisco l'intervallo completo appena creato
     const nuovo = await db.queryOne(`
       SELECT gi.*, CONCAT(u.nome, ' ', u.cognome) as user_name
       FROM goal_intervals gi JOIN users u ON gi.user_id = u.id
       WHERE gi.id = ?
     `, [idIntervallo]);
-    
-    nuovo.goals = await db.query(`
-      SELECT g.*, ig.completed
-      FROM interval_goals ig JOIN goals g ON ig.goal_id = g.id
-      WHERE ig.interval_id = ?
-    `, [idIntervallo]);
-    
+    const obiettiviMap = await _obiettiviPerIntervalli([idIntervallo]);
+    nuovo.goals = obiettiviMap[idIntervallo] || [];
     res.status(201).json(nuovo);
   } catch (errore) {
     console.error('Errore creazione intervallo:', errore);
@@ -155,22 +157,20 @@ const aggiorna = async (req, res) => {
     if (!intervallo) {
       return res.status(404).json({ error: 'Intervallo non trovato' });
     }
-    if (interval_type && !['daily', 'monthly', 'yearly'].includes(interval_type)) {
+    if (interval_type && !TIPI_INTERVALLO.includes(interval_type)) {
       return res.status(400).json({ error: 'interval_type non valido' });
     }
     
-    const campi = [];
-    const valori = [];
-    if (start_date) { campi.push('start_date = ?'); valori.push(start_date); }
-    if (end_date) { campi.push('end_date = ?'); valori.push(end_date); }
-    if (interval_type) { campi.push('interval_type = ?'); valori.push(interval_type); }
-    
-    if (campi.length === 0) {
+    const datiAggiornati = {};
+    if (start_date) datiAggiornati.start_date = start_date;
+    if (end_date) datiAggiornati.end_date = end_date;
+    if (interval_type) datiAggiornati.interval_type = interval_type;
+
+    const update = buildUpdateQuery('goal_intervals', datiAggiornati, 'WHERE id = ?', [idIntervallo]);
+    if (!update) {
       return res.status(400).json({ error: 'Nessun campo da aggiornare' });
     }
-    
-    valori.push(idIntervallo);
-    await db.execute(`UPDATE goal_intervals SET ${campi.join(', ')} WHERE id = ?`, valori);
+    await db.execute(update.sql, update.values);
     
     const aggiornato = await db.queryOne(`
       SELECT gi.*, CONCAT(u.nome, ' ', u.cognome) as user_name
@@ -251,66 +251,45 @@ const rimuoviObiettivo = async (req, res) => {
   }
 };
 
-// Segno un obiettivo come completato e assegno le monete all'utente
+// Segno un obiettivo come completato e assegno le monete
+// Delego tutta la logica di business al service layer
 const completaObiettivo = async (req, res) => {
   try {
     const { id, goalId } = req.params;
     
-    const associazione = await db.queryOne(`
-      SELECT ig.*, gi.user_id, g.coins_reward
-      FROM interval_goals ig
-      JOIN goal_intervals gi ON ig.interval_id = gi.id
-      JOIN goals g ON ig.goal_id = g.id
-      WHERE ig.interval_id = ? AND ig.goal_id = ?
-    `, [id, goalId]);
+    // Il service orchestra tutte le operazioni: verifica, aggiornamento, assegnazione monete
+    const risultato = await obiettiviService.completaObiettivo(parseInt(id), parseInt(goalId));
     
-    if (!associazione) {
-      return res.status(404).json({ error: 'Associazione non trovata' });
-    }
-    if (associazione.completed) {
-      return res.status(400).json({ error: 'Obiettivo già completato' });
+    // Aggiorno la sessione se l'utente loggato è quello che ha completato l'obiettivo
+    if (req.session?.user && req.session.user.id == risultato.user_id) {
+      req.session.user.coins = (req.session.user.coins || 0) + risultato.coins_reward;
     }
     
-    // Segno come completato
-    await db.execute(
-      'UPDATE interval_goals SET completed = 1, completed_at = NOW() WHERE interval_id = ? AND goal_id = ?',
-      [id, goalId]
-    );
-    
-    // Premio l'utente con le monete
-    await db.execute(
-      'UPDATE users SET coins = coins + ? WHERE id = ?',
-      [associazione.coins_reward, associazione.user_id]
-    );
-    
-    // Aggiorno la sessione se è l'utente corrente
-    if (req.session?.user && req.session.user.id == associazione.user_id) {
-      req.session.user.coins = (req.session.user.coins || 0) + associazione.coins_reward;
-    }
-    
-    res.json({ message: 'Obiettivo completato!', coins_earned: associazione.coins_reward });
+    res.json({ message: 'Obiettivo completato!', coins_earned: risultato.coins_reward });
   } catch (errore) {
+    if (errore.statusCode === 404) {
+      return res.status(404).json({ error: errore.message });
+    }
+    if (errore.statusCode === 400) {
+      return res.status(400).json({ error: errore.message });
+    }
     console.error('Errore completamento obiettivo:', errore);
     res.status(500).json({ error: 'Errore nel completamento dell\'obiettivo' });
   }
 };
 
-// Restituisco tutti gli intervalli di un utente specifico
+// Restituisco tutti gli intervalli di un utente (una query per intervalli, una per tutti gli obiettivi)
 const ottieniPerUtente = async (req, res) => {
   try {
     const intervalli = await db.query(
       'SELECT * FROM goal_intervals WHERE user_id = ? ORDER BY start_date DESC',
       [req.params.userId]
     );
-    
-    for (let intervallo of intervalli) {
-      intervallo.goals = await db.query(`
-        SELECT g.*, ig.completed, ig.completed_at
-        FROM interval_goals ig JOIN goals g ON ig.goal_id = g.id
-        WHERE ig.interval_id = ?
-      `, [intervallo.id]);
+    const ids = intervalli.map((i) => i.id);
+    const obiettiviPerId = await _obiettiviPerIntervalli(ids);
+    for (const intervallo of intervalli) {
+      intervallo.goals = obiettiviPerId[intervallo.id] || [];
     }
-    
     res.json(intervalli);
   } catch (errore) {
     console.error('Errore recupero intervalli utente:', errore);

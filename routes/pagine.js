@@ -1,106 +1,25 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs');
 const db = require('../config/database');
 const { verificaLogin, reindirizzaSeLoggato } = require('../middleware/autenticazione');
+const auth = require('../controllers/gestoreAutenticazione');
 
 /*
   Rotte delle pagine (viste).
-  Qui gestisco il rendering di tutte le pagine dell'applicazione,
-  la registrazione e il login tramite form.
-  Ogni query al database usa prepared statement per la sicurezza.
+  Definisco solo gli endpoint e delego la logica ai controller.
 */
-
-// --- Pagine pubbliche ---
 
 router.get('/', (req, res) => {
   res.render('home', { title: 'MeditActive - Trova il tuo equilibrio' });
 });
 
-// --- Registrazione ---
+router.get('/registrazione', reindirizzaSeLoggato, auth.mostraRegistrazione);
+router.post('/registrazione', reindirizzaSeLoggato, auth.registra);
 
-router.get('/registrazione', reindirizzaSeLoggato, (req, res) => {
-  res.render('registrazione', { title: 'Registrati - MeditActive' });
-});
+router.get('/accesso', reindirizzaSeLoggato, auth.mostraAccesso);
+router.post('/accesso', reindirizzaSeLoggato, auth.accedi);
 
-router.post('/registrazione', reindirizzaSeLoggato, async (req, res) => {
-  try {
-    const { email, password, confirmPassword, nome, cognome } = req.body;
-    
-    const errori = [];
-    if (!email || !password || !nome || !cognome) errori.push('Tutti i campi sono obbligatori');
-    if (password !== confirmPassword) errori.push('Le password non coincidono');
-    if (password && password.length < 6) errori.push('La password deve essere di almeno 6 caratteri');
-    
-    const emailEsistente = await db.queryOne('SELECT id FROM users WHERE email = ?', [email]);
-    if (emailEsistente) errori.push('Email già registrata');
-    
-    if (errori.length > 0) {
-      return res.render('registrazione', { title: 'Registrati - MeditActive', errors: errori, email, nome, cognome });
-    }
-    
-    // Cifro la password e creo l'utente
-    const passwordCifrata = await bcrypt.hash(password, 10);
-    const idUtente = await db.insert(
-      'INSERT INTO users (email, password, nome, cognome) VALUES (?, ?, ?, ?)',
-      [email, passwordCifrata, nome, cognome]
-    );
-    
-    // Login automatico dopo la registrazione
-    const utente = await db.queryOne(
-      'SELECT id, email, nome, cognome, coins FROM users WHERE id = ?', [idUtente]
-    );
-    req.session.user = utente;
-    
-    req.flash('success_msg', 'Registrazione completata! Benvenuto/a in MeditActive');
-    res.redirect('/pannello');
-  } catch (errore) {
-    console.error('Errore registrazione:', errore);
-    res.render('registrazione', { 
-      title: 'Registrati - MeditActive',
-      errors: ['Errore durante la registrazione'], 
-      email: req.body.email, nome: req.body.nome, cognome: req.body.cognome 
-    });
-  }
-});
-
-// --- Login ---
-
-router.get('/accesso', reindirizzaSeLoggato, (req, res) => {
-  res.render('accesso', { title: 'Accedi - MeditActive' });
-});
-
-router.post('/accesso', reindirizzaSeLoggato, async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return res.render('accesso', { title: 'Accedi - MeditActive', error: 'Email e password sono obbligatori', email });
-    }
-    
-    const utente = await db.queryOne('SELECT * FROM users WHERE email = ?', [email]);
-    
-    if (!utente || !(await bcrypt.compare(password, utente.password))) {
-      return res.render('accesso', { title: 'Accedi - MeditActive', error: 'Email o password non validi', email });
-    }
-    
-    req.session.user = {
-      id: utente.id, email: utente.email, nome: utente.nome, cognome: utente.cognome, coins: utente.coins
-    };
-    
-    req.flash('success_msg', `Bentornato/a, ${utente.nome}!`);
-    res.redirect('/pannello');
-  } catch (errore) {
-    console.error('Errore login:', errore);
-    res.render('accesso', { title: 'Accedi - MeditActive', error: 'Errore durante il login' });
-  }
-});
-
-// --- Logout ---
-
-router.get('/logout', (req, res) => {
-  req.session.destroy(() => res.redirect('/'));
-});
+router.get('/logout', auth.logout);
 
 // --- Dashboard (Pannello) ---
 
@@ -190,18 +109,41 @@ router.get('/abitudini', verificaLogin, async (req, res) => {
         (SELECT COUNT(*) FROM interval_goals ig WHERE ig.interval_id = gi.id AND ig.completed = 1) as completed_goals
       FROM goal_intervals gi WHERE gi.user_id = ? ORDER BY gi.start_date DESC
     `, [idUtente]);
-    
-    // Per ogni intervallo, recupero anche gli obiettivi dettagliati
-    const intervalli = [];
-    for (const intervallo of listaIntervalli) {
-      const obiettivi = await db.query(`
-        SELECT g.*, ig.completed, ig.completed_at
-        FROM interval_goals ig JOIN goals g ON ig.goal_id = g.id
-        WHERE ig.interval_id = ?
-      `, [intervallo.id]);
-      intervalli.push({ ...intervallo, goals: obiettivi });
+
+    // Evito l'N+1: recupero tutti gli obiettivi degli intervalli in un'unica query
+    const idsIntervalli = listaIntervalli.map(i => i.id);
+    let mappaObiettiviPerIntervallo = {};
+
+    if (idsIntervalli.length > 0) {
+      const placeholders = idsIntervalli.map(() => '?').join(',');
+      const righe = await db.query(`
+        SELECT g.*, ig.interval_id, ig.completed, ig.completed_at
+        FROM interval_goals ig
+        JOIN goals g ON ig.goal_id = g.id
+        WHERE ig.interval_id IN (${placeholders})
+      `, idsIntervalli);
+
+      // Inizializzo la mappa con tutti gli intervalli
+      mappaObiettiviPerIntervallo = {};
+      for (const id of idsIntervalli) {
+        mappaObiettiviPerIntervallo[id] = [];
+      }
+
+      // Raggruppo gli obiettivi per interval_id
+      for (const riga of righe) {
+        const { interval_id, ...goal } = riga;
+        if (!mappaObiettiviPerIntervallo[interval_id]) {
+          mappaObiettiviPerIntervallo[interval_id] = [];
+        }
+        mappaObiettiviPerIntervallo[interval_id].push(goal);
+      }
     }
-    
+
+    const intervalli = listaIntervalli.map(intervallo => ({
+      ...intervallo,
+      goals: mappaObiettiviPerIntervallo[intervallo.id] || []
+    }));
+
     res.render('abitudini', { title: 'Abitudini - MeditActive', preferences: preferenze, intervals: intervalli });
   } catch (errore) {
     console.error('Errore pagina abitudini:', errore);
@@ -315,55 +257,7 @@ router.get('/profilo', verificaLogin, async (req, res) => {
   }
 });
 
-// Aggiornamento profilo (POST dal form)
-router.post('/profilo', verificaLogin, async (req, res) => {
-  try {
-    const idUtente = req.session.user.id;
-    const { nome, cognome, email, password, newPassword } = req.body;
-    
-    if (newPassword) {
-      const utente = await db.queryOne('SELECT password FROM users WHERE id = ?', [idUtente]);
-      const passwordValida = await bcrypt.compare(password, utente.password);
-      if (!passwordValida) {
-        req.flash('error_msg', 'Password attuale non corretta');
-        return res.redirect('/profilo');
-      }
-      const nuovaPasswordCifrata = await bcrypt.hash(newPassword, 10);
-      await db.execute('UPDATE users SET password = ? WHERE id = ?', [nuovaPasswordCifrata, idUtente]);
-    }
-    
-    await db.execute('UPDATE users SET nome = ?, cognome = ?, email = ? WHERE id = ?', [nome, cognome, email, idUtente]);
-    
-    req.session.user.nome = nome;
-    req.session.user.cognome = cognome;
-    req.session.user.email = email;
-    
-    req.flash('success_msg', 'Profilo aggiornato con successo');
-    res.redirect('/profilo');
-  } catch (errore) {
-    console.error('Errore aggiornamento profilo:', errore);
-    req.flash('error_msg', 'Errore durante l\'aggiornamento');
-    res.redirect('/profilo');
-  }
-});
-
-// Aggiornamento preferenze
-router.post('/preferenze', verificaLogin, async (req, res) => {
-  try {
-    const { preferred_meditation_time, daily_goal_minutes, reminder_enabled, theme } = req.body;
-    
-    await db.execute(
-      'UPDATE users SET preferred_meditation_time = ?, daily_goal_minutes = ?, reminder_enabled = ?, theme = ? WHERE id = ?',
-      [preferred_meditation_time || null, daily_goal_minutes || 10, reminder_enabled ? 1 : 0, theme || 'light', req.session.user.id]
-    );
-    
-    req.flash('success_msg', 'Preferenze aggiornate');
-    res.redirect('/profilo');
-  } catch (errore) {
-    console.error('Errore preferenze:', errore);
-    req.flash('error_msg', 'Errore durante l\'aggiornamento');
-    res.redirect('/profilo');
-  }
-});
+router.post('/profilo', verificaLogin, auth.aggiornaProfilo);
+router.post('/preferenze', verificaLogin, auth.aggiornaPreferenze);
 
 module.exports = router;

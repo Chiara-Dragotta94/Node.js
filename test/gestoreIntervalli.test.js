@@ -2,6 +2,7 @@ const { expect } = require('chai');
 const sinon = require('sinon');
 const db = require('../config/database');
 const gestore = require('../controllers/gestoreIntervalli');
+const obiettiviService = require('../services/ObiettiviService');
 
 /*
   Test per il gestore degli intervalli.
@@ -39,8 +40,9 @@ describe('Gestore Intervalli', () => {
       const intervalli = [
         { id: 1, user_id: 1, start_date: '2026-02-01', end_date: '2026-02-28', interval_type: 'monthly' }
       ];
+      // La helper _obiettiviPerIntervalli raggruppa per interval_id: serve quel campo
       const obiettivi = [
-        { id: 1, name: 'Meditazione', completed: 0 }
+        { id: 1, name: 'Meditazione', completed: 0, interval_id: 1 }
       ];
       sinon.stub(db, 'query')
         .onFirstCall().resolves(intervalli)
@@ -101,7 +103,8 @@ describe('Gestore Intervalli', () => {
   describe('ottieniPerId', () => {
     it('dovrebbe restituire l\'intervallo con gli obiettivi associati', async () => {
       const intervallo = { id: 1, user_id: 1, start_date: '2026-02-01', end_date: '2026-02-28' };
-      const obiettivi = [{ id: 1, name: 'Meditazione', completed: 0 }];
+      // _obiettiviPerIntervalli si aspetta righe con interval_id per raggruppare
+      const obiettivi = [{ id: 1, name: 'Meditazione', completed: 0, interval_id: 1 }];
 
       sinon.stub(db, 'queryOne').resolves(intervallo);
       sinon.stub(db, 'query').resolves(obiettivi);
@@ -294,9 +297,11 @@ describe('Gestore Intervalli', () => {
   // ===== POST - Completare un obiettivo =====
   describe('completaObiettivo', () => {
     it('dovrebbe completare l\'obiettivo e assegnare le monete', async () => {
-      const associazione = { interval_id: 1, goal_id: 3, user_id: 1, coins_reward: 10, completed: 0 };
-      sinon.stub(db, 'queryOne').resolves(associazione);
-      sinon.stub(db, 'execute').resolves(1);
+      // Ora il controller delega al service: stubo il service invece del database
+      sinon.stub(obiettiviService, 'completaObiettivo').resolves({
+        user_id: 1,
+        coins_reward: 10
+      });
 
       const req = creaReq({
         params: { id: 1, goalId: 3 },
@@ -309,15 +314,16 @@ describe('Gestore Intervalli', () => {
       expect(res.statusCode).to.equal(200);
       expect(res.datiInviati.coins_earned).to.equal(10);
       expect(req.session.user.coins).to.equal(60);
+      // Verifico che il service sia stato chiamato con i parametri corretti
+      expect(obiettiviService.completaObiettivo.calledWith(1, 3)).to.be.true;
     });
 
     it('dovrebbe restituire 400 se l\'obiettivo è già completato', async () => {
-      sinon.stub(db, 'queryOne').resolves({ completed: 1, user_id: 1 });
+      const err = new Error('Obiettivo già completato');
+      err.statusCode = 400;
+      sinon.stub(obiettiviService, 'completaObiettivo').rejects(err);
 
-      const req = creaReq({
-        params: { id: 1, goalId: 3 },
-        session: {}
-      });
+      const req = creaReq({ params: { id: 1, goalId: 3 }, session: {} });
       const res = creaRes();
 
       await gestore.completaObiettivo(req, res);
@@ -327,7 +333,9 @@ describe('Gestore Intervalli', () => {
     });
 
     it('dovrebbe restituire 404 se l\'associazione non esiste', async () => {
-      sinon.stub(db, 'queryOne').resolves(null);
+      const err = new Error('Associazione non trovata');
+      err.statusCode = 404;
+      sinon.stub(obiettiviService, 'completaObiettivo').rejects(err);
 
       const req = creaReq({ params: { id: 1, goalId: 999 }, session: {} });
       const res = creaRes();

@@ -205,12 +205,18 @@ describe('Gestore Diario', () => {
   describe('creaDonazione', () => {
     it('dovrebbe creare una donazione e sottrarre le monete', async () => {
       const donazioneFinta = { id: 5, type: 'tree', coins_spent: 50, project_name: 'Foresta Amazzonica' };
+      sinon.stub(db, 'withTransaction').callsFake(async (callback) => {
+        const conn = {
+          execute: sinon.stub()
+            .onFirstCall().resolves([[{ coins: 100 }]])
+            .onSecondCall().resolves([{ affectedRows: 1 }])
+            .onThirdCall().resolves([{ insertId: 5 }])
+        };
+        return callback(conn);
+      });
       sinon.stub(db, 'queryOne')
-        .onFirstCall().resolves({ coins: 100 })    // monete sufficienti
-        .onSecondCall().resolves({ coins: 50 })     // monete dopo la sottrazione
-        .onThirdCall().resolves(donazioneFinta);     // donazione appena creata
-      sinon.stub(db, 'execute').resolves(1);
-      sinon.stub(db, 'insert').resolves(5);
+        .onFirstCall().resolves({ coins: 50 })
+        .onSecondCall().resolves(donazioneFinta);
 
       const req = creaReq({
         body: { type: 'tree', coins_spent: 50, project_name: 'Foresta Amazzonica' },
@@ -221,12 +227,17 @@ describe('Gestore Diario', () => {
       await gestore.creaDonazione(req, res);
 
       expect(res.statusCode).to.equal(201);
-      // Le monete nella sessione devono essere aggiornate a 50
       expect(req.session.user.coins).to.equal(50);
     });
 
     it('dovrebbe restituire 400 se le monete sono insufficienti', async () => {
-      sinon.stub(db, 'queryOne').resolves({ coins: 10 }); // solo 10 monete
+      // Stubo la transazione: la prima execute restituisce 10 monete, il controller deve rifiutare
+      sinon.stub(db, 'withTransaction').callsFake(async (callback) => {
+        const conn = {
+          execute: sinon.stub().onFirstCall().resolves([[{ coins: 10 }]])
+        };
+        return callback(conn);
+      });
 
       const req = creaReq({
         body: { type: 'tree', coins_spent: 50, project_name: 'Foresta' },
