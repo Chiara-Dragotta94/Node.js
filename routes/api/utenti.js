@@ -8,7 +8,7 @@ const { PASSWORD_MIN_LENGTH } = require('../../constants/costanti');
 
 /*
   Rotte API per gli utenti.
-  PUT e PATCH su /:id richiedono che l'utente modifichi solo sé stesso.
+  PUT, PATCH e DELETE su /:id richiedono che l'utente modifichi/elimini solo sé stesso.
 */
 
 router.get('/', gestore.ottieniTutti);
@@ -29,7 +29,7 @@ router.post('/',
 );
 router.put('/:id', verificaLogin, soloProprioProfilo, gestore.aggiorna);
 router.patch('/:id', verificaLogin, soloProprioProfilo, gestore.aggiorna);
-router.delete('/:id', gestore.elimina);
+router.delete('/:id', verificaLogin, soloProprioProfilo, gestore.elimina);
 router.post(
   '/login',
   [

@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const { validationResult } = require('express-validator');
 const db = require('../config/database');
 const { BCRYPT_ROUNDS, PASSWORD_MIN_LENGTH } = require('../constants/costanti');
 
@@ -13,18 +14,20 @@ const mostraRegistrazione = (req, res) => {
   res.render('registrazione', { title: 'Registrati - MeditActive' });
 };
 
-// Elaboro la registrazione: validazione, hash password, creazione utente
+// Elaboro la registrazione: uso express-validator per i controlli base,
+// poi verifico la conferma password e l'unicità dell'email a mano
+// (perché richiedono logica asincrona o confronto tra campi)
 const registra = async (req, res) => {
   try {
     const { email, password, confirmPassword, nome, cognome } = req.body;
-    const errori = [];
-    
-    if (!email || !password || !nome || !cognome) errori.push('Tutti i campi sono obbligatori');
+
+    // Raccolgo gli errori di express-validator
+    const risultatoValidazione = validationResult(req);
+    const errori = risultatoValidazione.array().map(e => e.msg);
+
+    // Controlli che express-validator non può fare da solo
     if (password !== confirmPassword) errori.push('Le password non coincidono');
-    if (password && password.length < PASSWORD_MIN_LENGTH) {
-      errori.push(`La password deve essere di almeno ${PASSWORD_MIN_LENGTH} caratteri`);
-    }
-    
+
     const emailEsistente = await db.queryOne('SELECT id FROM users WHERE email = ?', [email]);
     if (emailEsistente) errori.push('Email già registrata');
     

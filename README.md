@@ -178,7 +178,7 @@ I test coprono:
 - Password cifrate con **bcrypt** (round configurabili in `constants/costanti.js`)
 - Tutte le query usano **prepared statement** per prevenire SQL Injection
 - Sessioni gestite lato server con cookie sicuri
-- **PUT/PATCH utenti**: solo l'utente può modificare il proprio profilo (middleware `soloProprioProfilo`)
+- **PUT/PATCH/DELETE utenti**: solo l'utente può modificare o eliminare il proprio profilo (middleware `soloProprioProfilo`)
 - **Diario, statistiche, donazioni**: l'ID utente viene preso solo dalla sessione, mai da parametri
 - **Obiettivi e intervalli**: creazione, modifica ed eliminazione richiedono login
 - **Donazioni e completamento obiettivi**: operazioni in **transazione** (tutto o niente)

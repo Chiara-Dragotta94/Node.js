@@ -1,8 +1,10 @@
 const express = require('express');
+const { body } = require('express-validator');
 const router = express.Router();
 const db = require('../config/database');
 const { verificaLogin, reindirizzaSeLoggato } = require('../middleware/autenticazione');
 const auth = require('../controllers/gestoreAutenticazione');
+const { PASSWORD_MIN_LENGTH } = require('../constants/costanti');
 
 /*
   Rotte delle pagine (viste).
@@ -14,7 +16,18 @@ router.get('/', (req, res) => {
 });
 
 router.get('/registrazione', reindirizzaSeLoggato, auth.mostraRegistrazione);
-router.post('/registrazione', reindirizzaSeLoggato, auth.registra);
+router.post('/registrazione',
+  reindirizzaSeLoggato,
+  [
+    body('email').isEmail().withMessage('Email non valida'),
+    body('password')
+      .isLength({ min: PASSWORD_MIN_LENGTH })
+      .withMessage(`La password deve essere di almeno ${PASSWORD_MIN_LENGTH} caratteri`),
+    body('nome').notEmpty().withMessage('Il nome è obbligatorio'),
+    body('cognome').notEmpty().withMessage('Il cognome è obbligatorio')
+  ],
+  auth.registra
+);
 
 router.get('/accesso', reindirizzaSeLoggato, auth.mostraAccesso);
 router.post('/accesso', reindirizzaSeLoggato, auth.accedi);
